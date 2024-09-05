@@ -10,6 +10,7 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/forms"
 )
 
 func main() {
@@ -19,12 +20,49 @@ func main() {
 		e.Router.POST("/micropub", echo.HandlerFunc(handleMicropubCreate))
 		e.Router.PUT("/micropub", echo.HandlerFunc(handleMicropubUpdate))
 		e.Router.DELETE("/micropub", echo.HandlerFunc(handleMicropubDelete))
+
+		// Add routes for login
+		e.Router.GET("/login", echo.HandlerFunc(handleLoginPage))
+		e.Router.POST("/login", echo.HandlerFunc(handleLogin))
+
 		return nil
 	})
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func handleLoginPage(c echo.Context) error {
+	return c.File("login.html")
+}
+
+func handleLogin(c echo.Context) error {
+	app := c.Get("app").(*pocketbase.PocketBase)
+
+	email := c.FormValue("email")
+	password := c.FormValue("password")
+
+	authRecord, err := app.Users().AuthenticateWithPassword(email, password)
+	if err != nil {
+		return c.String(http.StatusUnauthorized, "Invalid email or password")
+	}
+
+	token, err := app.Users().CreateAuthToken(authRecord.Id)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to create auth token")
+	}
+
+	c.SetCookie(&http.Cookie{
+		Name:     "pb_auth",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	return c.Redirect(http.StatusSeeOther, "/")
 }
 
 func createPost(content map[string]interface{}) error {
