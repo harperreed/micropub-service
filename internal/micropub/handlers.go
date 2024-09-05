@@ -2,12 +2,10 @@ package micropub
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 
 	"github.com/labstack/echo/v5"
-	"github.com/harperreed/micropub-service/internal/git"
 	"log"
 )
 
