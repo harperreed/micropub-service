@@ -13,32 +13,32 @@
 - [x] Implement full functionality for updating and deleting posts
 
 ### 2. OAuth2 Authentication (PocketBase)
-- [ ] Write tests and stubs for OAuth2 authentication flow
-  - [ ] Test user registration process
-  - [ ] Test token generation and validation
-  - [ ] Test token refresh mechanism
-  - [ ] Test token revocation
-- [ ] Implement real functionality after passing tests
-  - [ ] Set up PocketBase OAuth2 server
-  - [ ] Implement user registration and login
-  - [ ] Implement token generation and validation
-  - [ ] Implement token refresh mechanism
-  - [ ] Implement token revocation
-- [ ] Integrate OAuth2 authentication with Micropub endpoint
+- [x] Write tests and stubs for OAuth2 authentication flow
+  - [x] Test user registration process
+  - [x] Test token generation and validation
+  - [x] Test token refresh mechanism
+  - [x] Test token revocation
+- [x] Implement real functionality after passing tests
+  - [x] Set up PocketBase OAuth2 server
+  - [x] Implement user registration and login
+  - [x] Implement token generation and validation
+  - [x] Implement token refresh mechanism
+  - [x] Implement token revocation
+- [x] Integrate OAuth2 authentication with Micropub endpoint
 
 ### 3. Git Integration
 - [x] Write functionality for committing posts to Git
 - [x] Write functionality for pushing posts to Git repository
 - [x] Write functionality for creating new branches
-- [ ] Write tests and stubs for creating pull requests
-- [ ] Implement real functionality for creating pull requests after passing tests
+- [x] Write tests and stubs for creating pull requests
+- [x] Implement real functionality for creating pull requests after passing tests
 
 ### 4. Frontmatter Generation
 - [x] Implement basic frontmatter generation
-- [ ] Write tests and stubs for advanced frontmatter generation
-  - [ ] Support for metadata (tags, categories)
-  - [ ] Mark posts as drafts
-- [ ] Implement real functionality after passing tests
+- [x] Write tests and stubs for advanced frontmatter generation
+  - [x] Support for metadata (tags, categories)
+  - [x] Mark posts as drafts
+- [x] Implement real functionality after passing tests
 
 ### 5. Media Endpoint
 - [ ] Write tests and stubs for media endpoint
@@ -119,5 +119,5 @@
 ## Miscellaneous
 - [x] Set up project in Go
 - [x] Use PocketBase as the backend for managing the blog index and OAuth2
-- [ ] Ensure the system is scalable for multi-blog support in future iterations
+- [x] Ensure the system is scalable for multi-blog support in future iterations
 
