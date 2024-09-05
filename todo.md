@@ -41,7 +41,7 @@
 - [x] Implement real functionality after passing tests
 
 ### 5. Media Endpoint
-- [ ] Write tests and stubs for media endpoint
+- [x] Write tests and stubs for media endpoint
 - [ ] Implement real functionality after passing tests
 
 ### 6. Post Metadata and PocketBase Indexing
