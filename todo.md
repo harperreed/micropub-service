@@ -118,6 +118,6 @@
 
 ## Miscellaneous
 - [x] Set up project in Go
-- [ ] Use PocketBase as the backend for managing the blog index and OAuth2
+- [x] Use PocketBase as the backend for managing the blog index and OAuth2
 - [ ] Ensure the system is scalable for multi-blog support in future iterations
 
