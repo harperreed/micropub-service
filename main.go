@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 )
 
 func main() {
@@ -13,7 +16,52 @@ func main() {
 }
 
 func handleMicropub(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement Micropub endpoint
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("Micropub endpoint not yet implemented"))
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	contentType := r.Header.Get("Content-Type")
+	var content map[string]interface{}
+
+	switch contentType {
+	case "application/x-www-form-urlencoded":
+		err := r.ParseForm()
+		if err != nil {
+			http.Error(w, "Error parsing form data", http.StatusBadRequest)
+			return
+		}
+		content = parseFormToMap(r.PostForm)
+	case "application/json":
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Error reading request body", http.StatusBadRequest)
+			return
+		}
+		err = json.Unmarshal(body, &content)
+		if err != nil {
+			http.Error(w, "Error parsing JSON", http.StatusBadRequest)
+			return
+		}
+	default:
+		http.Error(w, "Unsupported Content-Type", http.StatusUnsupportedMediaType)
+		return
+	}
+
+	// TODO: Process the content and create a new post
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("Post created successfully"))
+}
+
+func parseFormToMap(form url.Values) map[string]interface{} {
+	result := make(map[string]interface{})
+	for key, values := range form {
+		if len(values) == 1 {
+			result[key] = values[0]
+		} else {
+			result[key] = values
+		}
+	}
+	return result
 }

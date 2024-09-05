@@ -6,9 +6,10 @@
 - [x] Write tests and stubs for `create` post action
   - [x] Support `x-www-form-urlencoded` requests
   - [x] Support JSON requests
+- [x] Implement basic functionality for creating posts
 - [ ] Write tests and stubs for `update` post action
 - [ ] Write tests and stubs for `delete` post action
-- [ ] Implement real functionality after passing tests
+- [ ] Implement full functionality for creating, updating, and deleting posts
 
 ### 2. OAuth2 Authentication (PocketBase)
 - [ ] Write tests and stubs for OAuth2 authentication flow
