@@ -15,7 +15,7 @@ build:
 	$(GOBUILD) -o $(BINARY_NAME) -v ./cmd/server
 
 test:
-	$(GOTEST) -v ./...
+	$(GOTEST) -v ./... -coverprofile=coverage.out -covermode=atomic && go tool cover -html=coverage.out -o coverage.html
 
 clean:
 	$(GOCLEAN)
