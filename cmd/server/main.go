@@ -11,7 +11,6 @@ import (
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/patrickmn/go-cache"
 
-	"github.com/harperreed/micropub-service/internal/git"
 	"github.com/harperreed/micropub-service/internal/micropub"
 )
 
@@ -25,7 +24,6 @@ func init() {
 func roleAuthorization(allowedRoles ...string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			app := c.Get("app").(*pocketbase.PocketBase)
 			user, _ := c.Get("user").(*models.Record)
 
 			if user == nil {
@@ -95,7 +93,7 @@ func handleLogin(c echo.Context) error {
 		return c.String(http.StatusUnauthorized, "Invalid email or password")
 	}
 
-	token, err := app.Dao().NewAuthToken(authRecord)
+	token, err := app.NewAuthToken(authRecord)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to create auth token")
 	}

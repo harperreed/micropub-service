@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/harperreed/micropub-service/internal/git"
@@ -54,7 +52,7 @@ func TestUpdatePost(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(handleMicropubUpdate)
+		handler := http.HandlerFunc(HandleMicropubUpdate)
 
 		handler.ServeHTTP(rr, req)
 
@@ -105,7 +103,7 @@ func TestDeletePost(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(handleMicropubDelete)
+		handler := http.HandlerFunc(HandleMicropubDelete)
 
 		handler.ServeHTTP(rr, req)
 
@@ -125,7 +123,7 @@ func createTestPost(t *testing.T) {
 		"title":   "Test Post",
 		"content": "This is a test post",
 	}
-	err := createPost(content)
+	err := CreatePost(content)
 	if err != nil {
 		t.Fatalf("Failed to create test post: %v", err)
 	}
