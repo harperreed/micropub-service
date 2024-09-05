@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/harperreed/micropub-service/internal/git"
-	"github.com/labstack/echo/v4"
 )
 
 func TestCreatePost(t *testing.T) {
@@ -54,9 +53,7 @@ func TestUpdatePost(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 
 		rr := httptest.NewRecorder()
-		handler := echo.HandlerFunc(HandleMicropubUpdate)
-
-		handler.ServeHTTP(rr, req)
+		HandleMicropubUpdate(rr, req)
 
 		if status := rr.Code; status != http.StatusOK {
 			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
