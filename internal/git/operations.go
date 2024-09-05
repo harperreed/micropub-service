@@ -23,7 +23,7 @@ func InitializeRepo() error {
 	}
 
 	cmd := exec.Command("git", "init")
-	cmd.Dir = repoPath
+	cmd.Dir = RepoPath
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to initialize git repository: %v", err)
 	}
@@ -32,7 +32,7 @@ func InitializeRepo() error {
 }
 
 func createPost(content map[string]interface{}) error {
-	if err := initializeRepo(); err != nil {
+	if err := InitializeRepo(); err != nil {
 		return err
 	}
 
@@ -40,7 +40,7 @@ func createPost(content map[string]interface{}) error {
 	body := content["content"].(string)
 
 	filename := fmt.Sprintf("%s-%s.md", time.Now().Format("2006-01-02"), sanitizeFilename(title))
-	filePath := filepath.Join(repoPath, filename)
+	filePath := filepath.Join(RepoPath, filename)
 
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -69,7 +69,7 @@ func createPost(content map[string]interface{}) error {
 }
 
 func updatePost(content map[string]interface{}) error {
-	if err := initializeRepo(); err != nil {
+	if err := InitializeRepo(); err != nil {
 		return err
 	}
 
@@ -78,7 +78,7 @@ func updatePost(content map[string]interface{}) error {
 	body := content["content"].(string)
 
 	filename := filepath.Base(url)
-	filePath := filepath.Join(repoPath, filename)
+	filePath := filepath.Join(RepoPath, filename)
 
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
@@ -107,13 +107,13 @@ func updatePost(content map[string]interface{}) error {
 }
 
 func deletePost(content map[string]interface{}) error {
-	if err := initializeRepo(); err != nil {
+	if err := InitializeRepo(); err != nil {
 		return err
 	}
 
 	url := content["url"].(string)
 	filename := filepath.Base(url)
-	filePath := filepath.Join(repoPath, filename)
+	filePath := filepath.Join(RepoPath, filename)
 
 	if err := os.Remove(filePath); err != nil {
 		return fmt.Errorf("failed to delete file: %v", err)
@@ -136,7 +136,7 @@ func deletePost(content map[string]interface{}) error {
 
 func gitAdd(filename string) error {
 	cmd := exec.Command("git", "add", filename)
-	cmd.Dir = repoPath
+	cmd.Dir = RepoPath
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to git add: %v", err)
 	}
@@ -145,7 +145,7 @@ func gitAdd(filename string) error {
 
 func gitCommit(message string) error {
 	cmd := exec.Command("git", "commit", "-m", message)
-	cmd.Dir = repoPath
+	cmd.Dir = RepoPath
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to git commit: %v", err)
 	}
@@ -157,14 +157,14 @@ func gitPush() error {
 
 	// Create a new branch
 	cmd := exec.Command("git", "checkout", "-b", branchName)
-	cmd.Dir = repoPath
+	cmd.Dir = RepoPath
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to create new branch: %v", err)
 	}
 
 	// Push the new branch to the remote repository
 	cmd = exec.Command("git", "push", "-u", "origin", branchName)
-	cmd.Dir = repoPath
+	cmd.Dir = RepoPath
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to push new branch: %v", err)
 	}
