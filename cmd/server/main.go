@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v5"
+	"github.com/patrickmn/go-cache"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/models"
-	"github.com/patrickmn/go-cache"
 
-	"github.com/harperreed/micropub-service/internal/micropub"
+	"github.com/harperreed/micropub-service/internal/config"
 	"github.com/harperreed/micropub-service/internal/events"
 	"github.com/harperreed/micropub-service/internal/git"
-	"github.com/harperreed/micropub-service/internal/config"
+	"github.com/harperreed/micropub-service/internal/micropub"
 )
 
 var userRoleCache *cache.Cache
@@ -144,4 +144,3 @@ func handleLogin(c echo.Context) error {
 		"role":  role,
 	})
 }
-
