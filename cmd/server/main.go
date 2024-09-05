@@ -14,6 +14,7 @@ import (
 	"github.com/harperreed/micropub-service/internal/micropub"
 	"github.com/harperreed/micropub-service/internal/events"
 	"github.com/harperreed/micropub-service/internal/git"
+	"github.com/harperreed/micropub-service/internal/config"
 )
 
 var userRoleCache *cache.Cache
@@ -21,7 +22,6 @@ var userRoleCache *cache.Cache
 func init() {
 	userRoleCache = cache.New(5*time.Minute, 10*time.Minute)
 }
-
 
 func roleAuthorization(allowedRoles ...string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -57,6 +57,12 @@ func getUserRole(userId string) string {
 }
 
 func main() {
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
 	app := pocketbase.New()
 
 	// Initialize event emitter
@@ -64,7 +70,7 @@ func main() {
 	micropub.SetEventEmitter(eventEmitter)
 
 	// Initialize Git repository
-	if err := git.InitializeRepo(); err != nil {
+	if err := git.InitializeRepo(cfg.GitRepoPath); err != nil {
 		log.Fatalf("Failed to initialize Git repository: %v", err)
 	}
 
@@ -89,12 +95,8 @@ func main() {
 }
 
 func setupFileCleanup(emitter *events.EventEmitter) {
-	// Set up file cleanup process here
-	// This function should initialize your file cleanup process
-	// and set up any necessary event listeners
 	emitter.On("file", func(event interface{}) {
 		fileEvent := event.(events.FileEvent)
-		// Handle file event in cleanup process
 		log.Printf("File event received: %v", fileEvent)
 		// Implement your file cleanup logic here
 	})
@@ -138,7 +140,7 @@ func handleLogin(c echo.Context) error {
 	})
 
 	return c.JSON(http.StatusOK, map[string]string{
-		"token": token,
+		"token": token.Token,
 		"role":  role,
 	})
 }
