@@ -3,9 +3,9 @@
 ## Features
 
 ### 1. Micropub Endpoint
-- [ ] Write tests and stubs for `create` post action
-  - [ ] Support `x-www-form-urlencoded` requests
-  - [ ] Support JSON requests
+- [x] Write tests and stubs for `create` post action
+  - [x] Support `x-www-form-urlencoded` requests
+  - [x] Support JSON requests
 - [ ] Write tests and stubs for `update` post action
 - [ ] Write tests and stubs for `delete` post action
 - [ ] Implement real functionality after passing tests
