@@ -48,7 +48,11 @@ func handleMicropub(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Process the content and create a new post
+	err := createPost(content)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error creating post: %v", err), http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("Post created successfully"))

@@ -7,23 +7,25 @@
   - [x] Support `x-www-form-urlencoded` requests
   - [x] Support JSON requests
 - [x] Implement basic functionality for creating posts
+- [x] Implement Git integration for creating posts
 - [ ] Write tests and stubs for `update` post action
 - [ ] Write tests and stubs for `delete` post action
-- [ ] Implement full functionality for creating, updating, and deleting posts
+- [ ] Implement full functionality for updating and deleting posts
 
 ### 2. OAuth2 Authentication (PocketBase)
 - [ ] Write tests and stubs for OAuth2 authentication flow
 - [ ] Implement real functionality after passing tests
 
 ### 3. Git Integration
-- [ ] Write tests and stubs for committing posts to Git
+- [x] Write functionality for committing posts to Git
 - [ ] Write tests and stubs for pushing posts to Git repository
 - [ ] Write tests and stubs for creating new branches or pull requests
 - [ ] Implement real functionality after passing tests
 
 ### 4. Frontmatter Generation
-- [ ] Write tests and stubs for frontmatter generation
-  - [ ] Support for metadata (tags, categories, dates)
+- [x] Implement basic frontmatter generation
+- [ ] Write tests and stubs for advanced frontmatter generation
+  - [ ] Support for metadata (tags, categories)
   - [ ] Mark posts as drafts
 - [ ] Implement real functionality after passing tests
 
@@ -80,7 +82,7 @@
 ---
 
 ## Miscellaneous
-- [ ] Set up project in Go
+- [x] Set up project in Go
 - [ ] Use PocketBase as the backend for managing the blog index and OAuth2
 - [ ] Ensure the system is scalable for multi-blog support in future iterations
 
