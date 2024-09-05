@@ -16,15 +16,30 @@ func main() {
 	app := pocketbase.New()
 
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST("/micropub", handleMicropubCreate)
-		e.Router.PUT("/micropub", handleMicropubUpdate)
-		e.Router.DELETE("/micropub", handleMicropubDelete)
+		e.Router.POST("/micropub", echo.WrapHandler(echo.HandlerFunc(handleMicropubCreate)))
+		e.Router.PUT("/micropub", echo.WrapHandler(echo.HandlerFunc(handleMicropubUpdate)))
+		e.Router.DELETE("/micropub", echo.WrapHandler(echo.HandlerFunc(handleMicropubDelete)))
 		return nil
 	})
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func createPost(content map[string]interface{}) error {
+	// Implement the createPost logic here
+	return nil
+}
+
+func updatePost(content map[string]interface{}) error {
+	// Implement the updatePost logic here
+	return nil
+}
+
+func deletePost(content map[string]interface{}) error {
+	// Implement the deletePost logic here
+	return nil
 }
 
 func handleMicropubCreate(c echo.Context) error {
