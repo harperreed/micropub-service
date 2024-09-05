@@ -32,3 +32,4 @@ go.sum
 
 output.txt
 vendor
+pb_data/
