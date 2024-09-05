@@ -2,7 +2,10 @@ module github.com/harperreed/micropub-service
 
 go 1.22.2
 
-require github.com/pocketbase/pocketbase v0.22.20
+require (
+	github.com/labstack/echo/v4 v4.11.4
+	github.com/pocketbase/pocketbase v0.22.20
+)
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7 // indirect
