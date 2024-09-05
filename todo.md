@@ -45,7 +45,7 @@
 - [x] Implement real functionality after passing tests
 
 ### 6. Post Metadata and PocketBase Indexing
-- [ ] Write tests and stubs for storing blog entry metadata in PocketBase
+- [x] Write tests and stubs for storing blog entry metadata in PocketBase
 - [ ] Write tests and stubs for indexing Git repository blog entries
 - [ ] Implement real functionality after passing tests
 
