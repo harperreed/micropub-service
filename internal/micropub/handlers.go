@@ -7,7 +7,21 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"log"
+	"github.com/harperreed/micropub-service/internal/events"
 )
+
+// FileEvent represents a file-related event
+type FileEvent struct {
+	Type     string // e.g., "upload", "delete"
+	Filename string
+}
+
+// EventEmitter is an interface for emitting events
+type EventEmitter interface {
+	Emit(event interface{})
+}
+
+var eventEmitter EventEmitter
 
 func HandleMicropubCreate(c echo.Context) error {
 	content, err := parseContent(c)
@@ -17,6 +31,13 @@ func HandleMicropubCreate(c echo.Context) error {
 
 	// TODO: Implement CreatePost functionality
 	log.Printf("Attempting to create post with content: %v", content)
+
+	// Emit file upload event
+	if eventEmitter != nil {
+		filename := content["filename"].(string) // Assuming the filename is part of the content
+		eventEmitter.Emit(FileEvent{Type: "upload", Filename: filename})
+	}
+
 	return c.String(http.StatusNotImplemented, "Create functionality not yet implemented")
 }
 
@@ -39,6 +60,13 @@ func HandleMicropubDelete(c echo.Context) error {
 
 	// TODO: Implement DeletePost functionality
 	log.Printf("Attempting to delete post with content: %v", content)
+
+	// Emit file delete event
+	if eventEmitter != nil {
+		filename := content["url"].(string) // Assuming the URL is the filename
+		eventEmitter.Emit(FileEvent{Type: "delete", Filename: filename})
+	}
+
 	return c.String(http.StatusNotImplemented, "Delete functionality not yet implemented")
 }
 
@@ -74,4 +102,9 @@ func parseFormToMap(form url.Values) map[string]interface{} {
 		}
 	}
 	return result
+}
+
+// SetEventEmitter sets the event emitter for the package
+func SetEventEmitter(emitter EventEmitter) {
+	eventEmitter = emitter
 }

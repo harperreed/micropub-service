@@ -57,6 +57,13 @@ func getUserRole(userId string) string {
 func main() {
 	app := pocketbase.New()
 
+	// Initialize event emitter
+	eventEmitter := events.NewEventEmitter()
+	micropub.SetEventEmitter(eventEmitter)
+
+	// Set up file cleanup process
+	setupFileCleanup(eventEmitter)
+
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		e.Router.POST("/micropub", echo.HandlerFunc(micropub.HandleMicropubCreate), roleAuthorization("admin", "editor"))
 		e.Router.PUT("/micropub", echo.HandlerFunc(micropub.HandleMicropubUpdate), roleAuthorization("admin", "editor"))
@@ -72,6 +79,18 @@ func main() {
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func setupFileCleanup(emitter *events.EventEmitter) {
+	// Set up file cleanup process here
+	// This function should initialize your file cleanup process
+	// and set up any necessary event listeners
+	emitter.On("file", func(event interface{}) {
+		fileEvent := event.(events.FileEvent)
+		// Handle file event in cleanup process
+		log.Printf("File event received: %v", fileEvent)
+		// Implement your file cleanup logic here
+	})
 }
 
 func handleLoginPage(c echo.Context) error {
