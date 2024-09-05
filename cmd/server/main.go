@@ -12,6 +12,7 @@ import (
 	"github.com/patrickmn/go-cache"
 
 	"github.com/harperreed/micropub-service/internal/micropub"
+	"github.com/harperreed/micropub-service/internal/events"
 )
 
 var userRoleCache *cache.Cache
@@ -112,7 +113,7 @@ func handleLogin(c echo.Context) error {
 		return c.String(http.StatusUnauthorized, "Invalid email or password")
 	}
 
-	token, err := app.NewAuthToken(authRecord)
+	token, err := core.NewAuthToken(app, authRecord)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to create auth token")
 	}
