@@ -11,10 +11,10 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/models"
 
-	"github.com/yourusername/yourprojectname/internal/config"
-	"github.com/yourusername/yourprojectname/internal/events"
-	"github.com/yourusername/yourprojectname/internal/git"
-	"github.com/yourusername/yourprojectname/internal/micropub"
+	"github.com/harperreed/micropub-service/internal/config"
+	"github.com/harperreed/micropub-service/internal/events"
+	"github.com/harperreed/micropub-service/internal/git"
+	"github.com/harperreed/micropub-service/internal/micropub"
 )
 
 var userRoleCache *cache.Cache
