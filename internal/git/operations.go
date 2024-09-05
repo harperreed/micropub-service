@@ -9,14 +9,14 @@ import (
 	"time"
 )
 
-const (
-	repoPath  = "./content"
-	remoteURL = "https://github.com/your-username/your-repo.git"
+var (
+	RepoPath  = "./content"
+	RemoteURL = "https://github.com/your-username/your-repo.git"
 )
 
-func initializeRepo() error {
-	if _, err := os.Stat(repoPath); os.IsNotExist(err) {
-		err := os.MkdirAll(repoPath, 0755)
+func InitializeRepo() error {
+	if _, err := os.Stat(RepoPath); os.IsNotExist(err) {
+		err := os.MkdirAll(RepoPath, 0755)
 		if err != nil {
 			return fmt.Errorf("failed to create content directory: %v", err)
 		}

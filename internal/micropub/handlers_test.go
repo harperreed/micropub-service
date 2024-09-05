@@ -78,12 +78,12 @@ func TestDeletePost(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	// Set the repoPath to the temporary directory
-	originalRepoPath := repoPath
-	repoPath = tempDir
-	defer func() { repoPath = originalRepoPath }()
+	originalRepoPath := git.RepoPath
+	git.RepoPath = tempDir
+	defer func() { git.RepoPath = originalRepoPath }()
 
 	// Initialize a test Git repository
-	if err := initializeRepo(); err != nil {
+	if err := git.InitializeRepo(); err != nil {
 		t.Fatalf("Failed to initialize test repository: %v", err)
 	}
 

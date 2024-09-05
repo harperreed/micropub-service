@@ -1,11 +1,8 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/labstack/echo/v5"
@@ -24,17 +21,6 @@ func init() {
 	userRoleCache = cache.New(5*time.Minute, 10*time.Minute)
 }
 
-func createPost(content map[string]interface{}) error {
-	return git.CreatePost(content)
-}
-
-func updatePost(content map[string]interface{}) error {
-	return git.UpdatePost(content)
-}
-
-func deletePost(content map[string]interface{}) error {
-	return git.DeletePost(content)
-}
 
 func roleAuthorization(allowedRoles ...string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -109,7 +95,7 @@ func handleLogin(c echo.Context) error {
 		return c.String(http.StatusUnauthorized, "Invalid email or password")
 	}
 
-	token, err := app.NewAuthToken(authRecord)
+	token, err := app.Dao().NewAuthToken(authRecord)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to create auth token")
 	}
