@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -16,9 +16,9 @@ func main() {
 	app := pocketbase.New()
 
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST("/micropub", handleMicropubCreate)
-		e.Router.PUT("/micropub", handleMicropubUpdate)
-		e.Router.DELETE("/micropub", handleMicropubDelete)
+		e.Router.POST("/micropub", echo.HandlerFunc(handleMicropubCreate))
+		e.Router.PUT("/micropub", echo.HandlerFunc(handleMicropubUpdate))
+		e.Router.DELETE("/micropub", echo.HandlerFunc(handleMicropubDelete))
 		return nil
 	})
 
