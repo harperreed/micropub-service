@@ -8,9 +8,9 @@
   - [x] Support JSON requests
 - [x] Implement basic functionality for creating posts
 - [x] Implement Git integration for creating posts
-- [ ] Write tests and stubs for `update` post action
-- [ ] Write tests and stubs for `delete` post action
-- [ ] Implement full functionality for updating and deleting posts
+- [x] Write tests and stubs for `update` post action
+- [x] Write tests and stubs for `delete` post action
+- [x] Implement full functionality for updating and deleting posts
 
 ### 2. OAuth2 Authentication (PocketBase)
 - [ ] Write tests and stubs for OAuth2 authentication flow

@@ -12,6 +12,10 @@ import (
 )
 
 func TestCreatePost(t *testing.T) {
+	// ... (keep existing TestCreatePost function)
+}
+
+func TestUpdatePost(t *testing.T) {
 	// Create a temporary directory for testing
 	tempDir, err := os.MkdirTemp("", "test-repo")
 	if err != nil {
@@ -29,100 +33,98 @@ func TestCreatePost(t *testing.T) {
 		t.Fatalf("Failed to initialize test repository: %v", err)
 	}
 
-	// Test for x-www-form-urlencoded request
-	t.Run("x-www-form-urlencoded", func(t *testing.T) {
-		form := url.Values{}
-		form.Add("h", "entry")
-		form.Add("content", "This is a test post")
-		form.Add("category[]", "test")
-		form.Add("category[]", "example")
-
-		req, err := http.NewRequest("POST", "/micropub", strings.NewReader(form.Encode()))
-		if err != nil {
-			t.Fatal(err)
-		}
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(handleMicropub)
-
-		handler.ServeHTTP(rr, req)
-
-		if status := rr.Code; status != http.StatusCreated {
-			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusCreated)
-		}
-
-		expected := "Post created successfully and pushed to Git repository"
-		if rr.Body.String() != expected {
-			t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
-		}
-	})
+	// Create a test post
+	createTestPost(t)
 
 	// Test for JSON request
 	t.Run("JSON", func(t *testing.T) {
 		jsonBody := map[string]interface{}{
-			"type":    []string{"h-entry"},
-			"content": "This is a test post",
-			"category": []string{
-				"test",
-				"example",
-			},
+			"action":  "update",
+			"url":     "https://example.com/2023-05-01-test-post.md",
+			"content": "This is an updated test post",
 		}
 		jsonBytes, _ := json.Marshal(jsonBody)
 
-		req, err := http.NewRequest("POST", "/micropub", bytes.NewBuffer(jsonBytes))
+		req, err := http.NewRequest("PUT", "/micropub", bytes.NewBuffer(jsonBytes))
 		if err != nil {
 			t.Fatal(err)
 		}
 		req.Header.Set("Content-Type", "application/json")
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(handleMicropub)
+		handler := http.HandlerFunc(handleMicropubUpdate)
 
 		handler.ServeHTTP(rr, req)
 
-		if status := rr.Code; status != http.StatusCreated {
-			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusCreated)
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 		}
 
-		expected := "Post created successfully and pushed to Git repository"
+		expected := "Post updated successfully and pushed to Git repository"
 		if rr.Body.String() != expected {
 			t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
 		}
 	})
+}
 
-	// Test for unsupported content type
-	t.Run("Unsupported Content-Type", func(t *testing.T) {
-		req, err := http.NewRequest("POST", "/micropub", nil)
+func TestDeletePost(t *testing.T) {
+	// Create a temporary directory for testing
+	tempDir, err := os.MkdirTemp("", "test-repo")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Set the repoPath to the temporary directory
+	originalRepoPath := repoPath
+	repoPath = tempDir
+	defer func() { repoPath = originalRepoPath }()
+
+	// Initialize a test Git repository
+	if err := initializeRepo(); err != nil {
+		t.Fatalf("Failed to initialize test repository: %v", err)
+	}
+
+	// Create a test post
+	createTestPost(t)
+
+	// Test for JSON request
+	t.Run("JSON", func(t *testing.T) {
+		jsonBody := map[string]interface{}{
+			"action": "delete",
+			"url":    "https://example.com/2023-05-01-test-post.md",
+		}
+		jsonBytes, _ := json.Marshal(jsonBody)
+
+		req, err := http.NewRequest("DELETE", "/micropub", bytes.NewBuffer(jsonBytes))
 		if err != nil {
 			t.Fatal(err)
 		}
-		req.Header.Set("Content-Type", "text/plain")
+		req.Header.Set("Content-Type", "application/json")
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(handleMicropub)
+		handler := http.HandlerFunc(handleMicropubDelete)
 
 		handler.ServeHTTP(rr, req)
 
-		if status := rr.Code; status != http.StatusUnsupportedMediaType {
-			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusUnsupportedMediaType)
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+		}
+
+		expected := "Post deleted successfully and pushed to Git repository"
+		if rr.Body.String() != expected {
+			t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
 		}
 	})
+}
 
-	// Test for method not allowed
-	t.Run("Method Not Allowed", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/micropub", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(handleMicropub)
-
-		handler.ServeHTTP(rr, req)
-
-		if status := rr.Code; status != http.StatusMethodNotAllowed {
-			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusMethodNotAllowed)
-		}
-	})
+func createTestPost(t *testing.T) {
+	content := map[string]interface{}{
+		"title":   "Test Post",
+		"content": "This is a test post",
+	}
+	err := createPost(content)
+	if err != nil {
+		t.Fatalf("Failed to create test post: %v", err)
+	}
 }

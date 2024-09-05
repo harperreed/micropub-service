@@ -68,6 +68,72 @@ func createPost(content map[string]interface{}) error {
 	return nil
 }
 
+func updatePost(content map[string]interface{}) error {
+	if err := initializeRepo(); err != nil {
+		return err
+	}
+
+	url := content["url"].(string)
+	title := content["title"].(string)
+	body := content["content"].(string)
+
+	filename := filepath.Base(url)
+	filePath := filepath.Join(repoPath, filename)
+
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %v", err)
+	}
+	defer file.Close()
+
+	_, err = fmt.Fprintf(file, "---\ntitle: %s\ndate: %s\n---\n\n%s", title, time.Now().Format(time.RFC3339), body)
+	if err != nil {
+		return fmt.Errorf("failed to write content to file: %v", err)
+	}
+
+	if err := gitAdd(filename); err != nil {
+		return err
+	}
+
+	if err := gitCommit(fmt.Sprintf("Update post: %s", title)); err != nil {
+		return err
+	}
+
+	if err := gitPush(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func deletePost(content map[string]interface{}) error {
+	if err := initializeRepo(); err != nil {
+		return err
+	}
+
+	url := content["url"].(string)
+	filename := filepath.Base(url)
+	filePath := filepath.Join(repoPath, filename)
+
+	if err := os.Remove(filePath); err != nil {
+		return fmt.Errorf("failed to delete file: %v", err)
+	}
+
+	if err := gitAdd(filename); err != nil {
+		return err
+	}
+
+	if err := gitCommit(fmt.Sprintf("Delete post: %s", filename)); err != nil {
+		return err
+	}
+
+	if err := gitPush(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func gitAdd(filename string) error {
 	cmd := exec.Command("git", "add", filename)
 	cmd.Dir = repoPath
