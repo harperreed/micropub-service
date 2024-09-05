@@ -6,20 +6,63 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/forms"
+	"github.com/pocketbase/pocketbase/models"
+	"github.com/patrickmn/go-cache"
 )
+
+var userRoleCache *cache.Cache
+
+func init() {
+	userRoleCache = cache.New(5*time.Minute, 10*time.Minute)
+}
+
+func roleAuthorization(allowedRoles ...string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			app := c.Get("app").(*pocketbase.PocketBase)
+			user, _ := c.Get("user").(*models.Record)
+
+			if user == nil {
+				return c.String(http.StatusUnauthorized, "You must be logged in to access this resource")
+			}
+
+			userRole := getUserRole(user.Id)
+			for _, role := range allowedRoles {
+				if userRole == role {
+					return next(c)
+				}
+			}
+
+			return c.String(http.StatusForbidden, "You are not authorized to access this resource")
+		}
+	}
+}
+
+func getUserRole(userId string) string {
+	if cachedRole, found := userRoleCache.Get(userId); found {
+		return cachedRole.(string)
+	}
+
+	// If not found in cache, fetch from database and cache it
+	// This is a placeholder - replace with actual database query
+	role := "user" // Default role
+	userRoleCache.Set(userId, role, cache.DefaultExpiration)
+	return role
+}
 
 func main() {
 	app := pocketbase.New()
 
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST("/micropub", echo.HandlerFunc(handleMicropubCreate))
-		e.Router.PUT("/micropub", echo.HandlerFunc(handleMicropubUpdate))
-		e.Router.DELETE("/micropub", echo.HandlerFunc(handleMicropubDelete))
+		e.Router.POST("/micropub", echo.HandlerFunc(handleMicropubCreate), roleAuthorization("admin", "editor"))
+		e.Router.PUT("/micropub", echo.HandlerFunc(handleMicropubUpdate), roleAuthorization("admin", "editor"))
+		e.Router.DELETE("/micropub", echo.HandlerFunc(handleMicropubDelete), roleAuthorization("admin"))
 
 		// Add routes for login
 		e.Router.GET("/login", echo.HandlerFunc(handleLoginPage))
@@ -53,6 +96,10 @@ func handleLogin(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to create auth token")
 	}
 
+	// Cache the user's role
+	role := authRecord.GetString("role") // Assuming the role is stored in a "role" field
+	userRoleCache.Set(authRecord.Id, role, cache.DefaultExpiration)
+
 	c.SetCookie(&http.Cookie{
 		Name:     "pb_auth",
 		Value:    token,
@@ -62,7 +109,10 @@ func handleLogin(c echo.Context) error {
 		SameSite: http.SameSiteStrictMode,
 	})
 
-	return c.Redirect(http.StatusSeeOther, "/")
+	return c.JSON(http.StatusOK, map[string]string{
+		"token": token,
+		"role":  role,
+	})
 }
 
 func createPost(content map[string]interface{}) error {
