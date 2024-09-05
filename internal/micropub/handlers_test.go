@@ -3,12 +3,14 @@ package micropub
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
 	"github.com/harperreed/micropub-service/internal/git"
+	"github.com/labstack/echo/v4"
 )
 
 func TestCreatePost(t *testing.T) {
@@ -126,7 +128,5 @@ func createTestPost(t *testing.T) {
 	// TODO: Implement CreatePost functionality
 	// For now, we'll just log the content
 	log.Printf("Creating test post with content: %v", content)
-	if err != nil {
-		t.Fatalf("Failed to create test post: %v", err)
-	}
+	// Remove the error check since we're not actually creating a post yet
 }
