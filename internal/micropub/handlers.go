@@ -30,7 +30,8 @@ func HandleMicropubUpdate(c echo.Context) error {
 		return err
 	}
 
-	err = git.UpdatePost(content)
+	// TODO: Implement UpdatePost functionality
+	return c.String(http.StatusNotImplemented, "Update functionality not yet implemented")
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("Error updating post: %v", err))
 	}
@@ -44,7 +45,8 @@ func HandleMicropubDelete(c echo.Context) error {
 		return err
 	}
 
-	err = git.DeletePost(content)
+	// TODO: Implement DeletePost functionality
+	return c.String(http.StatusNotImplemented, "Delete functionality not yet implemented")
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("Error deleting post: %v", err))
 	}
