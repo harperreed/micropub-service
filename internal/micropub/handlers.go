@@ -8,6 +8,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/harperreed/micropub-service/internal/git"
+	"log"
 )
 
 func HandleMicropubCreate(c echo.Context) error {
@@ -16,12 +17,9 @@ func HandleMicropubCreate(c echo.Context) error {
 		return err
 	}
 
-	err = git.CreatePost(content)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("Error creating post: %v", err))
-	}
-
-	return c.String(http.StatusCreated, "Post created successfully and pushed to Git repository")
+	// TODO: Implement CreatePost functionality
+	log.Printf("Attempting to create post with content: %v", content)
+	return c.String(http.StatusNotImplemented, "Create functionality not yet implemented")
 }
 
 func HandleMicropubUpdate(c echo.Context) error {
@@ -31,12 +29,8 @@ func HandleMicropubUpdate(c echo.Context) error {
 	}
 
 	// TODO: Implement UpdatePost functionality
+	log.Printf("Attempting to update post with content: %v", content)
 	return c.String(http.StatusNotImplemented, "Update functionality not yet implemented")
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("Error updating post: %v", err))
-	}
-
-	return c.String(http.StatusOK, "Post updated successfully and pushed to Git repository")
 }
 
 func HandleMicropubDelete(c echo.Context) error {
@@ -46,12 +40,8 @@ func HandleMicropubDelete(c echo.Context) error {
 	}
 
 	// TODO: Implement DeletePost functionality
+	log.Printf("Attempting to delete post with content: %v", content)
 	return c.String(http.StatusNotImplemented, "Delete functionality not yet implemented")
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("Error deleting post: %v", err))
-	}
-
-	return c.String(http.StatusOK, "Post deleted successfully and pushed to Git repository")
 }
 
 func parseContent(c echo.Context) (map[string]interface{}, error) {
