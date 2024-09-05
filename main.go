@@ -11,7 +11,6 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/forms"
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/patrickmn/go-cache"
 )
@@ -86,23 +85,27 @@ func handleLogin(c echo.Context) error {
 	email := c.FormValue("email")
 	password := c.FormValue("password")
 
-	authRecord, err := app.Users().AuthenticateWithPassword(email, password)
+	authRecord, err := app.Dao().FindAuthRecordByEmail("users", email)
 	if err != nil {
 		return c.String(http.StatusUnauthorized, "Invalid email or password")
 	}
 
-	token, err := app.Users().CreateAuthToken(authRecord.Id)
+	if !authRecord.ValidatePassword(password) {
+		return c.String(http.StatusUnauthorized, "Invalid email or password")
+	}
+
+	token, err := app.NewAuthToken(authRecord)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to create auth token")
 	}
 
 	// Cache the user's role
-	role := authRecord.GetString("role") // Assuming the role is stored in a "role" field
+	role := authRecord.Get("role").(string) // Assuming the role is stored in a "role" field
 	userRoleCache.Set(authRecord.Id, role, cache.DefaultExpiration)
 
 	c.SetCookie(&http.Cookie{
 		Name:     "pb_auth",
-		Value:    token,
+		Value:    token.Token,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
