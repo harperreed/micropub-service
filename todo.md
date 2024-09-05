@@ -18,9 +18,10 @@
 
 ### 3. Git Integration
 - [x] Write functionality for committing posts to Git
-- [ ] Write tests and stubs for pushing posts to Git repository
-- [ ] Write tests and stubs for creating new branches or pull requests
-- [ ] Implement real functionality after passing tests
+- [x] Write functionality for pushing posts to Git repository
+- [x] Write functionality for creating new branches
+- [ ] Write tests and stubs for creating pull requests
+- [ ] Implement real functionality for creating pull requests after passing tests
 
 ### 4. Frontmatter Generation
 - [x] Implement basic frontmatter generation

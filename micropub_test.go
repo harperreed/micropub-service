@@ -6,11 +6,29 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 )
 
 func TestCreatePost(t *testing.T) {
+	// Create a temporary directory for testing
+	tempDir, err := os.MkdirTemp("", "test-repo")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Set the repoPath to the temporary directory
+	originalRepoPath := repoPath
+	repoPath = tempDir
+	defer func() { repoPath = originalRepoPath }()
+
+	// Initialize a test Git repository
+	if err := initializeRepo(); err != nil {
+		t.Fatalf("Failed to initialize test repository: %v", err)
+	}
+
 	// Test for x-www-form-urlencoded request
 	t.Run("x-www-form-urlencoded", func(t *testing.T) {
 		form := url.Values{}
@@ -34,7 +52,7 @@ func TestCreatePost(t *testing.T) {
 			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusCreated)
 		}
 
-		expected := "Post created successfully"
+		expected := "Post created successfully and pushed to Git repository"
 		if rr.Body.String() != expected {
 			t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
 		}
@@ -67,7 +85,7 @@ func TestCreatePost(t *testing.T) {
 			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusCreated)
 		}
 
-		expected := "Post created successfully"
+		expected := "Post created successfully and pushed to Git repository"
 		if rr.Body.String() != expected {
 			t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
 		}

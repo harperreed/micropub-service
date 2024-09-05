@@ -55,7 +55,7 @@ func handleMicropub(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("Post created successfully"))
+	w.Write([]byte("Post created successfully and pushed to Git repository"))
 }
 
 func parseFormToMap(form url.Values) map[string]interface{} {

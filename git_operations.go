@@ -5,11 +5,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 const (
-	repoPath = "./content"
+	repoPath  = "./content"
+	remoteURL = "https://github.com/your-username/your-repo.git"
 )
 
 func initializeRepo() error {
@@ -59,6 +61,10 @@ func createPost(content map[string]interface{}) error {
 		return err
 	}
 
+	if err := gitPush(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -77,6 +83,29 @@ func gitCommit(message string) error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to git commit: %v", err)
 	}
+	return nil
+}
+
+func gitPush() error {
+	branchName := fmt.Sprintf("post-%d", time.Now().Unix())
+
+	// Create a new branch
+	cmd := exec.Command("git", "checkout", "-b", branchName)
+	cmd.Dir = repoPath
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to create new branch: %v", err)
+	}
+
+	// Push the new branch to the remote repository
+	cmd = exec.Command("git", "push", "-u", "origin", branchName)
+	cmd.Dir = repoPath
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to push new branch: %v", err)
+	}
+
+	// Create a pull request (this is a placeholder, as creating a PR typically requires using the GitHub API)
+	fmt.Printf("New branch '%s' has been pushed. Please create a pull request manually.\n", branchName)
+
 	return nil
 }
 
