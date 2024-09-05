@@ -13,6 +13,7 @@ import (
 
 	"github.com/harperreed/micropub-service/internal/micropub"
 	"github.com/harperreed/micropub-service/internal/events"
+	"github.com/harperreed/micropub-service/internal/git"
 )
 
 var userRoleCache *cache.Cache
@@ -61,6 +62,11 @@ func main() {
 	// Initialize event emitter
 	eventEmitter := events.NewEventEmitter()
 	micropub.SetEventEmitter(eventEmitter)
+
+	// Initialize Git repository
+	if err := git.InitializeRepo(); err != nil {
+		log.Fatalf("Failed to initialize Git repository: %v", err)
+	}
 
 	// Set up file cleanup process
 	setupFileCleanup(eventEmitter)

@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/labstack/echo/v5"
+	"github.com/harperreed/micropub-service/internal/git"
 	"log"
 )
 
@@ -28,16 +29,19 @@ func HandleMicropubCreate(c echo.Context) error {
 		return err
 	}
 
-	// TODO: Implement CreatePost functionality
-	log.Printf("Attempting to create post with content: %v", content)
+	err = git.CreatePost(content)
+	if err != nil {
+		log.Printf("Error creating post: %v", err)
+		return c.String(http.StatusInternalServerError, "Failed to create post")
+	}
 
 	// Emit file upload event
 	if eventEmitter != nil {
-		filename := content["filename"].(string) // Assuming the filename is part of the content
+		filename := content["filename"].(string)
 		eventEmitter.Emit(FileEvent{Type: "upload", Filename: filename})
 	}
 
-	return c.String(http.StatusNotImplemented, "Create functionality not yet implemented")
+	return c.String(http.StatusCreated, "Post created successfully")
 }
 
 func HandleMicropubUpdate(c echo.Context) error {
@@ -46,9 +50,13 @@ func HandleMicropubUpdate(c echo.Context) error {
 		return err
 	}
 
-	// TODO: Implement UpdatePost functionality
-	log.Printf("Attempting to update post with content: %v", content)
-	return c.String(http.StatusNotImplemented, "Update functionality not yet implemented")
+	err = git.UpdatePost(content)
+	if err != nil {
+		log.Printf("Error updating post: %v", err)
+		return c.String(http.StatusInternalServerError, "Failed to update post")
+	}
+
+	return c.String(http.StatusOK, "Post updated successfully")
 }
 
 func HandleMicropubDelete(c echo.Context) error {
@@ -57,8 +65,11 @@ func HandleMicropubDelete(c echo.Context) error {
 		return err
 	}
 
-	// TODO: Implement DeletePost functionality
-	log.Printf("Attempting to delete post with content: %v", content)
+	err = git.DeletePost(content)
+	if err != nil {
+		log.Printf("Error deleting post: %v", err)
+		return c.String(http.StatusInternalServerError, "Failed to delete post")
+	}
 
 	// Emit file delete event
 	if eventEmitter != nil {
@@ -66,7 +77,7 @@ func HandleMicropubDelete(c echo.Context) error {
 		eventEmitter.Emit(FileEvent{Type: "delete", Filename: filename})
 	}
 
-	return c.String(http.StatusNotImplemented, "Delete functionality not yet implemented")
+	return c.String(http.StatusOK, "Post deleted successfully")
 }
 
 func parseContent(c echo.Context) (map[string]interface{}, error) {

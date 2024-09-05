@@ -31,7 +31,7 @@ func InitializeRepo() error {
 	return nil
 }
 
-func createPost(content map[string]interface{}) error {
+func CreatePost(content map[string]interface{}) error {
 	if err := InitializeRepo(); err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func createPost(content map[string]interface{}) error {
 	return nil
 }
 
-func updatePost(content map[string]interface{}) error {
+func UpdatePost(content map[string]interface{}) error {
 	if err := InitializeRepo(); err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func updatePost(content map[string]interface{}) error {
 	return nil
 }
 
-func deletePost(content map[string]interface{}) error {
+func DeletePost(content map[string]interface{}) error {
 	if err := InitializeRepo(); err != nil {
 		return err
 	}
