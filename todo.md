@@ -42,7 +42,7 @@
 
 ### 5. Media Endpoint
 - [x] Write tests and stubs for media endpoint
-- [ ] Implement real functionality after passing tests
+- [x] Implement real functionality after passing tests
 
 ### 6. Post Metadata and PocketBase Indexing
 - [ ] Write tests and stubs for storing blog entry metadata in PocketBase
