@@ -7,7 +7,6 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"log"
-	"github.com/harperreed/micropub-service/internal/events"
 )
 
 // FileEvent represents a file-related event
