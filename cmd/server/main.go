@@ -63,6 +63,9 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
+	// Use the configuration
+	log.Printf("Git repository path: %s", cfg.GitRepoPath)
+
 	app := pocketbase.New()
 
 	// Initialize event emitter

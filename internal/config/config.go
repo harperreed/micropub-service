@@ -1,11 +1,28 @@
 package config
 
-// Add your configuration structures and functions here
-// For example:
-// type Config struct {
-//     // Add your configuration fields
-// }
-//
-// func LoadConfig() (*Config, error) {
-//     // Implement config loading logic
-// }
+import (
+	"encoding/json"
+	"os"
+)
+
+type Config struct {
+	GitRepoPath string `json:"gitRepoPath"`
+	// Add more configuration fields as needed
+}
+
+func Load() (*Config, error) {
+	file, err := os.Open("config.json")
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var config Config
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
