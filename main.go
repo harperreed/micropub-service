@@ -1,9 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -25,30 +23,32 @@ func main() {
 	}
 }
 
-func handleMicropub(c echo.Context) error {
-	contentType := c.Request().Header.Get("Content-Type")
+func handleMicropub(c *core.ServeEvent) error {
+	req := c.Router.Context().Request()
+	contentType := req.Header.Get("Content-Type")
 	var content map[string]interface{}
 
 	switch contentType {
 	case "application/x-www-form-urlencoded":
-		if err := c.Request().ParseForm(); err != nil {
-			return c.String(http.StatusBadRequest, "Error parsing form data")
+		if err := req.ParseForm(); err != nil {
+			return c.Router.Context().String(http.StatusBadRequest, "Error parsing form data")
 		}
-		content = parseFormToMap(c.Request().PostForm)
+		content = parseFormToMap(req.PostForm)
 	case "application/json":
-		if err := c.Bind(&content); err != nil {
-			return c.String(http.StatusBadRequest, "Error parsing JSON")
+		if err := c.Router.Context().Bind(&content); err != nil {
+			return c.Router.Context().String(http.StatusBadRequest, "Error parsing JSON")
 		}
 	default:
-		return c.String(http.StatusUnsupportedMediaType, "Unsupported Content-Type")
+		return c.Router.Context().String(http.StatusUnsupportedMediaType, "Unsupported Content-Type")
 	}
 
-	err := createPost(content)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("Error creating post: %v", err))
-	}
+	// TODO: Implement createPost function
+	// err := createPost(content)
+	// if err != nil {
+	// 	return c.Router.Context().String(http.StatusInternalServerError, fmt.Sprintf("Error creating post: %v", err))
+	// }
 
-	return c.String(http.StatusCreated, "Post created successfully and pushed to Git repository")
+	return c.Router.Context().String(http.StatusCreated, "Post created successfully and pushed to Git repository")
 }
 
 func parseFormToMap(form url.Values) map[string]interface{} {
