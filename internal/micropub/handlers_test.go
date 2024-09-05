@@ -1,4 +1,4 @@
-package main
+package micropub
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"your-module-name/internal/git"
+	"github.com/harperreed/micropub-service/internal/git"
 )
 
 func TestCreatePost(t *testing.T) {

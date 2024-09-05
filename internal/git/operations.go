@@ -1,4 +1,4 @@
-package micropub
+package git
 
 import (
 	"fmt"

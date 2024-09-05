@@ -7,7 +7,7 @@ import (
 	"net/url"
 
 	"github.com/labstack/echo/v5"
-	"your-module-name/internal/git"
+	"github.com/harperreed/micropub-service/internal/git"
 )
 
 func HandleMicropubCreate(c echo.Context) error {
