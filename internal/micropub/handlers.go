@@ -20,26 +20,40 @@ type EventEmitter interface {
 	Emit(event interface{})
 }
 
+type PostEvent struct {
+    Type   string
+    PostID string
+}
+
 var eventEmitter EventEmitter
 
 func HandleMicropubCreate(c echo.Context) error {
 	content, err := parseContent(c)
-	if err != nil {
-		return err
-	}
+    if err != nil {
+        return echo.NewHTTPError(http.StatusBadRequest, "Invalid request: "+err.Error())
+    }
 
-	err = git.GitOps.CreatePost(content)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to create post")
-	}
+    // Check if required fields are present
+    if content["type"] == nil || len(content["type"].([]interface{})) == 0 {
+        return c.String(http.StatusBadRequest, "Missing 'type' field")
+    }
 
-	// Emit file upload event
-	if eventEmitter != nil {
-		filename := content["filename"].(string)
-		eventEmitter.Emit(FileEvent{Type: "upload", Filename: filename})
-	}
+    properties, ok := content["properties"].(map[string]interface{})
+    if !ok || properties["content"] == nil {
+        return c.String(http.StatusBadRequest, "Missing or invalid 'content' field")
+    }
 
-	return c.String(http.StatusCreated, "Post created successfully")
+    if eventEmitter != nil {
+        postID := content["url"].(string) // Assuming the URL is set after creation
+        eventEmitter.Emit(PostEvent{Type: "create", PostID: postID})
+    }
+
+    err = git.GitOps.CreatePost(content)
+    if err != nil {
+        return c.String(http.StatusInternalServerError, "Failed to create post: "+err.Error())
+    }
+
+    return c.String(http.StatusCreated, "Post created successfully")
 }
 
 func HandleMicropubUpdate(c echo.Context) error {
@@ -57,45 +71,43 @@ func HandleMicropubUpdate(c echo.Context) error {
 }
 
 func HandleMicropubDelete(c echo.Context) error {
-	content, err := parseContent(c)
-	if err != nil {
-		return err
-	}
+    content, err := parseContent(c)
+    if err != nil {
+        return err
+    }
 
-	err = git.GitOps.DeletePost(content)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to delete post")
-	}
+    if _, ok := content["url"]; !ok {
+        return echo.NewHTTPError(http.StatusBadRequest, "Missing URL for delete action")
+    }
 
-	// Emit file delete event
-	if eventEmitter != nil {
-		filename := content["url"].(string) // Assuming the URL is the filename
-		eventEmitter.Emit(FileEvent{Type: "delete", Filename: filename})
-	}
+    err = git.GitOps.DeletePost(content)
+    if err != nil {
+        return c.String(http.StatusInternalServerError, "Failed to delete post")
+    }
 
-	return c.String(http.StatusOK, "Post deleted successfully")
+    return c.String(http.StatusOK, "Post deleted successfully")
 }
 
 func parseContent(c echo.Context) (map[string]interface{}, error) {
-	req := c.Request()
-	contentType := req.Header.Get("Content-Type")
-	var content map[string]interface{}
+    req := c.Request()
+    contentType := req.Header.Get("Content-Type")
+    var content map[string]interface{}
 
-	switch contentType {
-	case "application/x-www-form-urlencoded":
-		if err := req.ParseForm(); err != nil {
-			return nil, c.String(http.StatusBadRequest, "Error parsing form data")
-		}
-		content = parseFormToMap(req.PostForm)
-	case "application/json":
-		if err := json.NewDecoder(req.Body).Decode(&content); err != nil {
-			return nil, c.String(http.StatusBadRequest, "Error parsing JSON")
-		}
-	default:
-		return nil, c.String(http.StatusUnsupportedMediaType, "Unsupported Content-Type")
-	}
+    switch contentType {
+    case "application/x-www-form-urlencoded":
+        if err := req.ParseForm(); err != nil {
+            return nil, echo.NewHTTPError(http.StatusBadRequest, "Error parsing form data: "+err.Error())
+        }
+        content = parseFormToMap(req.PostForm)
+    case "application/json":
+        if err := json.NewDecoder(req.Body).Decode(&content); err != nil {
+            return nil, echo.NewHTTPError(http.StatusBadRequest, "Error parsing JSON: "+err.Error())
+        }
+    default:
+        return nil, echo.NewHTTPError(http.StatusUnsupportedMediaType, "Unsupported Content-Type")
+    }
 
-	return content, nil
+    return content, nil
 }
 
 func parseFormToMap(form url.Values) map[string]interface{} {
