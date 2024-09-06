@@ -1,0 +1,17 @@
+[tools]
+go = "1.23" # Specify the Go version you want to use
+
+
+[tasks.llm_helper_generate_output_txt]
+run = "repo2txt --exclude-dir public resources node_modules pb_data vendor --ignore-files package-lock.json spec.md go.sum"
+description = 'Remove all the various output.txts'                                  # hide this task from the list
+
+
+
+[tasks]
+build = "go build -o server -v ./cmd/server"
+test = "go test -v ./... -coverprofile=coverage.out -covermode=atomic && go tool cover -html=coverage.out -o coverage.html"
+clean = "go clean && rm -f server"
+run = { cmd = "./server", depends = ["build"] }
+deps = "go get ./... && go mod tidy"
+all = { depends = ["test", "build"] }
