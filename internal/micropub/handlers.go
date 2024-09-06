@@ -7,7 +7,6 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/harperreed/micropub-service/internal/git"
-	"log"
 )
 
 // FileEvent represents a file-related event
@@ -29,9 +28,8 @@ func HandleMicropubCreate(c echo.Context) error {
 		return err
 	}
 
-	err = git.CreatePost(content)
+	err = git.GitOps.CreatePost(content)
 	if err != nil {
-		log.Printf("Error creating post: %v", err)
 		return c.String(http.StatusInternalServerError, "Failed to create post")
 	}
 
@@ -50,9 +48,8 @@ func HandleMicropubUpdate(c echo.Context) error {
 		return err
 	}
 
-	err = git.UpdatePost(content)
+	err = git.GitOps.UpdatePost(content)
 	if err != nil {
-		log.Printf("Error updating post: %v", err)
 		return c.String(http.StatusInternalServerError, "Failed to update post")
 	}
 
@@ -65,9 +62,8 @@ func HandleMicropubDelete(c echo.Context) error {
 		return err
 	}
 
-	err = git.DeletePost(content)
+	err = git.GitOps.DeletePost(content)
 	if err != nil {
-		log.Printf("Error deleting post: %v", err)
 		return c.String(http.StatusInternalServerError, "Failed to delete post")
 	}
 

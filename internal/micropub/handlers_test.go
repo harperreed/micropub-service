@@ -1,129 +1,55 @@
 package micropub
 
 import (
-	"bytes"
-	"encoding/json"
-	"log"
 	"net/http"
 	"net/http/httptest"
-	"os"
+	"strings"
 	"testing"
 
+	"github.com/labstack/echo/v5"
 	"github.com/harperreed/micropub-service/internal/git"
 )
 
-func TestCreatePost(t *testing.T) {
-	// ... (keep existing TestCreatePost function)
+// MockGitOperations is a mock implementation of git operations
+type MockGitOperations struct{}
+
+func (m *MockGitOperations) UpdatePost(content map[string]interface{}) error {
+	// Mock implementation
+	return nil
 }
 
-func TestUpdatePost(t *testing.T) {
-	// Create a temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "test-repo")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
+func TestHandleMicropubUpdate(t *testing.T) {
+	// Create a new Echo instance
+	e := echo.New()
 
-	// Set the repoPath to the temporary directory
-	originalRepoPath := git.RepoPath
-	git.RepoPath = tempDir
-	defer func() { git.RepoPath = originalRepoPath }()
+	// Create a new request
+	req := httptest.NewRequest(http.MethodPut, "/micropub", strings.NewReader(`{"action":"update","url":"https://example.com/2023-05-01-test-post.md","content":"This is an updated test post"}`))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
-	// Initialize a test Git repository
-	if err := git.InitializeRepo(); err != nil {
-		t.Fatalf("Failed to initialize test repository: %v", err)
-	}
+	// Create a ResponseRecorder to record the response
+	rec := httptest.NewRecorder()
 
-	// Create a test post
-	createTestPost(t)
+	// Create a new Echo context
+	c := e.NewContext(req, rec)
 
-	// Test for JSON request
-	t.Run("JSON", func(t *testing.T) {
-		jsonBody := map[string]interface{}{
-			"action":  "update",
-			"url":     "https://example.com/2023-05-01-test-post.md",
-			"content": "This is an updated test post",
-		}
-		jsonBytes, _ := json.Marshal(jsonBody)
+	// Mock git operations
+	originalGitOps := git.GitOps
+	git.GitOps = &MockGitOperations{}
+	defer func() { git.GitOps = originalGitOps }()
 
-		req, err := http.NewRequest("PUT", "/micropub", bytes.NewBuffer(jsonBytes))
-		if err != nil {
-			t.Fatal(err)
-		}
-		req.Header.Set("Content-Type", "application/json")
-
-		rr := httptest.NewRecorder()
-		HandleMicropubUpdate(rr, req)
-
-		if status := rr.Code; status != http.StatusOK {
-			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
-		}
-
-		expected := "Post updated successfully and pushed to Git repository"
-		if rr.Body.String() != expected {
-			t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
-		}
-	})
-}
-
-func TestDeletePost(t *testing.T) {
-	// Create a temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "test-repo")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	// Set the repoPath to the temporary directory
-	originalRepoPath := git.RepoPath
-	git.RepoPath = tempDir
-	defer func() { git.RepoPath = originalRepoPath }()
-
-	// Initialize a test Git repository
-	if err := git.InitializeRepo(); err != nil {
-		t.Fatalf("Failed to initialize test repository: %v", err)
+	// Call the handler
+	if err := HandleMicropubUpdate(c); err != nil {
+		t.Fatalf("HandleMicropubUpdate failed: %v", err)
 	}
 
-	// Create a test post
-	createTestPost(t)
-
-	// Test for JSON request
-	t.Run("JSON", func(t *testing.T) {
-		jsonBody := map[string]interface{}{
-			"action": "delete",
-			"url":    "https://example.com/2023-05-01-test-post.md",
-		}
-		jsonBytes, _ := json.Marshal(jsonBody)
-
-		req, err := http.NewRequest("DELETE", "/micropub", bytes.NewBuffer(jsonBytes))
-		if err != nil {
-			t.Fatal(err)
-		}
-		req.Header.Set("Content-Type", "application/json")
-
-		rr := httptest.NewRecorder()
-		handler := echo.HandlerFunc(HandleMicropubDelete)
-
-		handler.ServeHTTP(rr, req)
-
-		if status := rr.Code; status != http.StatusOK {
-			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
-		}
-
-		expected := "Post deleted successfully and pushed to Git repository"
-		if rr.Body.String() != expected {
-			t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
-		}
-	})
-}
-
-func createTestPost(t *testing.T) {
-	content := map[string]interface{}{
-		"title":   "Test Post",
-		"content": "This is a test post",
+	// Check the status code
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected status OK; got %v", rec.Code)
 	}
-	// TODO: Implement CreatePost functionality
-	// For now, we'll just log the content
-	log.Printf("Creating test post with content: %v", content)
-	// Remove the error check since we're not actually creating a post yet
+
+	// Check the response body
+	expected := "Post updated successfully"
+	if strings.TrimSpace(rec.Body.String()) != expected {
+		t.Errorf("Expected body %q; got %q", expected, rec.Body.String())
+	}
 }

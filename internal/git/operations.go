@@ -9,33 +9,67 @@ import (
 	"time"
 )
 
-var (
-	RepoPath  = "./content"
-	RemoteURL = "https://github.com/your-username/your-repo.git"
-)
+var RepoPath = "./content" // You might want to make this configurable
 
-func InitializeRepo() error {
-	if _, err := os.Stat(RepoPath); os.IsNotExist(err) {
-		err := os.MkdirAll(RepoPath, 0755)
-		if err != nil {
-			return fmt.Errorf("failed to create content directory: %v", err)
-		}
+// GitOperations interface defines the methods for git operations
+type GitOperations interface {
+	CreatePost(content map[string]interface{}) error
+	UpdatePost(content map[string]interface{}) error
+	DeletePost(content map[string]interface{}) error
+}
+
+
+// DefaultGitOperations is the default implementation of GitOperations
+type DefaultGitOperations struct{}
+
+var GitOps GitOperations = &DefaultGitOperations{}
+
+func (g *DefaultGitOperations) UpdatePost(content map[string]interface{}) error {
+	url, ok := content["url"].(string)
+	if !ok {
+		return fmt.Errorf("invalid URL")
 	}
 
-	cmd := exec.Command("git", "init")
-	cmd.Dir = RepoPath
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to initialize git repository: %v", err)
+	title, ok := content["title"].(string)
+	if !ok {
+		return fmt.Errorf("invalid title")
+	}
+
+	body, ok := content["content"].(string)
+	if !ok {
+		return fmt.Errorf("invalid content")
+	}
+
+	filename := filepath.Base(url)
+	filePath := filepath.Join(RepoPath, filename)
+
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %v", err)
+	}
+	defer file.Close()
+
+	_, err = fmt.Fprintf(file, "---\ntitle: %s\ndate: %s\n---\n\n%s", title, time.Now().Format(time.RFC3339), body)
+	if err != nil {
+		return fmt.Errorf("failed to write content to file: %v", err)
+	}
+
+	if err := gitAdd(filename); err != nil {
+		return err
+	}
+
+	if err := gitCommit(fmt.Sprintf("Update post: %s", title)); err != nil {
+		return err
+	}
+
+	if err := gitPush(); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func CreatePost(content map[string]interface{}) error {
-	if err := InitializeRepo(); err != nil {
-		return err
-	}
-
+func (g *DefaultGitOperations) CreatePost(content map[string]interface{}) error {
 	title := content["title"].(string)
 	body := content["content"].(string)
 
@@ -68,67 +102,18 @@ func CreatePost(content map[string]interface{}) error {
 	return nil
 }
 
-func UpdatePost(content map[string]interface{}) error {
-	if err := InitializeRepo(); err != nil {
-		return err
+func InitializeRepo() error {
+	if _, err := os.Stat(RepoPath); os.IsNotExist(err) {
+		err := os.MkdirAll(RepoPath, 0755)
+		if err != nil {
+			return fmt.Errorf("failed to create content directory: %v", err)
+		}
 	}
 
-	url := content["url"].(string)
-	title := content["title"].(string)
-	body := content["content"].(string)
-
-	filename := filepath.Base(url)
-	filePath := filepath.Join(RepoPath, filename)
-
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open file: %v", err)
-	}
-	defer file.Close()
-
-	_, err = fmt.Fprintf(file, "---\ntitle: %s\ndate: %s\n---\n\n%s", title, time.Now().Format(time.RFC3339), body)
-	if err != nil {
-		return fmt.Errorf("failed to write content to file: %v", err)
-	}
-
-	if err := gitAdd(filename); err != nil {
-		return err
-	}
-
-	if err := gitCommit(fmt.Sprintf("Update post: %s", title)); err != nil {
-		return err
-	}
-
-	if err := gitPush(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func DeletePost(content map[string]interface{}) error {
-	if err := InitializeRepo(); err != nil {
-		return err
-	}
-
-	url := content["url"].(string)
-	filename := filepath.Base(url)
-	filePath := filepath.Join(RepoPath, filename)
-
-	if err := os.Remove(filePath); err != nil {
-		return fmt.Errorf("failed to delete file: %v", err)
-	}
-
-	if err := gitAdd(filename); err != nil {
-		return err
-	}
-
-	if err := gitCommit(fmt.Sprintf("Delete post: %s", filename)); err != nil {
-		return err
-	}
-
-	if err := gitPush(); err != nil {
-		return err
+	cmd := exec.Command("git", "init")
+	cmd.Dir = RepoPath
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to initialize git repository: %v", err)
 	}
 
 	return nil
@@ -153,30 +138,57 @@ func gitCommit(message string) error {
 }
 
 func gitPush() error {
-	branchName := fmt.Sprintf("post-%d", time.Now().Unix())
-
-	// Create a new branch
-	cmd := exec.Command("git", "checkout", "-b", branchName)
+	cmd := exec.Command("git", "push")
 	cmd.Dir = RepoPath
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to create new branch: %v", err)
+		return fmt.Errorf("failed to git push: %v", err)
+	}
+	return nil
+}
+
+
+
+func (g *DefaultGitOperations) DeletePost(content map[string]interface{}) error {
+	url := content["url"].(string)
+	filename := filepath.Base(url)
+	filePath := filepath.Join(RepoPath, filename)
+
+	if err := os.Remove(filePath); err != nil {
+		return fmt.Errorf("failed to delete file: %v", err)
 	}
 
-	// Push the new branch to the remote repository
-	cmd = exec.Command("git", "push", "-u", "origin", branchName)
-	cmd.Dir = RepoPath
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to push new branch: %v", err)
+	if err := gitAdd(filename); err != nil {
+		return err
 	}
 
-	// Create a pull request (this is a placeholder, as creating a PR typically requires using the GitHub API)
-	fmt.Printf("New branch '%s' has been pushed. Please create a pull request manually.\n", branchName)
+	if err := gitCommit(fmt.Sprintf("Delete post: %s", filename)); err != nil {
+		return err
+	}
+
+	if err := gitPush(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func sanitizeFilename(filename string) string {
-	// Implement a function to sanitize the filename
-	// For simplicity, we'll just replace spaces with hyphens
-	return filepath.Clean(strings.ReplaceAll(filename, " ", "-"))
+	// Replace spaces with hyphens
+	sanitized := strings.ReplaceAll(filename, " ", "-")
+
+	// Remove any characters that aren't alphanumeric, hyphen, or underscore
+	sanitized = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			return r
+		}
+		return -1
+	}, sanitized)
+
+	// Convert to lowercase
+	sanitized = strings.ToLower(sanitized)
+
+	// Trim any leading or trailing hyphens or underscores
+	sanitized = strings.Trim(sanitized, "-_")
+
+	return sanitized
 }

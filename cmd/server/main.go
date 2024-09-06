@@ -11,7 +11,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/models"
 
-	"github.com/harperreed/micropub-service/internal"
+	"github.com/harperreed/micropub-service/internal/config"
 	"github.com/harperreed/micropub-service/internal/events"
 	"github.com/harperreed/micropub-service/internal/git"
 	"github.com/harperreed/micropub-service/internal/micropub"
@@ -21,6 +21,14 @@ var userRoleCache *cache.Cache
 
 func init() {
 	userRoleCache = cache.New(5*time.Minute, 10*time.Minute)
+}
+
+func setupFileCleanup(emitter *events.EventEmitter) {
+	emitter.On("file", func(event interface{}) {
+		fileEvent := event.(events.FileEvent)
+		log.Printf("File event received: %v", fileEvent)
+		// Implement your file cleanup logic here
+	})
 }
 
 func roleAuthorization(allowedRoles ...string) echo.MiddlewareFunc {
@@ -54,55 +62,6 @@ func getUserRole(userId string) string {
 	role := "user" // Default role
 	userRoleCache.Set(userId, role, cache.DefaultExpiration)
 	return role
-}
-
-func main() {
-	// Load configuration
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
-	}
-
-	// Use the configuration
-	log.Printf("Git repository path: %s", cfg.GitRepoPath)
-
-	app := pocketbase.New()
-
-	// Initialize event emitter
-	eventEmitter := events.NewEventEmitter()
-	micropub.SetEventEmitter(eventEmitter)
-
-	// Initialize Git repository
-	if err := git.InitializeRepo(cfg.GitRepoPath); err != nil {
-		log.Fatalf("Failed to initialize Git repository: %v", err)
-	}
-
-	// Set up file cleanup process
-	setupFileCleanup(eventEmitter)
-
-	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST("/micropub", echo.HandlerFunc(micropub.HandleMicropubCreate), roleAuthorization("admin", "editor"))
-		e.Router.PUT("/micropub", echo.HandlerFunc(micropub.HandleMicropubUpdate), roleAuthorization("admin", "editor"))
-		e.Router.DELETE("/micropub", echo.HandlerFunc(micropub.HandleMicropubDelete), roleAuthorization("admin"))
-
-		// Add routes for login
-		e.Router.GET("/login", echo.HandlerFunc(handleLoginPage))
-		e.Router.POST("/login", echo.HandlerFunc(handleLogin))
-
-		return nil
-	})
-
-	if err := app.Start(); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func setupFileCleanup(emitter *events.EventEmitter) {
-	emitter.On("file", func(event interface{}) {
-		fileEvent := event.(events.FileEvent)
-		log.Printf("File event received: %v", fileEvent)
-		// Implement your file cleanup logic here
-	})
 }
 
 func handleLoginPage(c echo.Context) error {
@@ -146,4 +105,44 @@ func handleLogin(c echo.Context) error {
 		"token": token.Token,
 		"role":  role,
 	})
+}
+func main() {
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	// Use the configuration
+	log.Printf("Git repository path: %s", cfg.GitRepoPath)
+
+	app := pocketbase.New()
+
+	// Initialize event emitter
+	eventEmitter := events.NewEventEmitter()
+	micropub.SetEventEmitter(eventEmitter)
+
+	// Initialize Git repository
+	if err := git.InitializeRepo(cfg.GitRepoPath); err != nil {
+		log.Fatalf("Failed to initialize Git repository: %v", err)
+	}
+
+	// Set up file cleanup process
+	setupFileCleanup(eventEmitter)
+
+	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+		e.Router.POST("/micropub", echo.HandlerFunc(micropub.HandleMicropubCreate), roleAuthorization("admin", "editor"))
+		e.Router.PUT("/micropub", echo.HandlerFunc(micropub.HandleMicropubUpdate), roleAuthorization("admin", "editor"))
+		e.Router.DELETE("/micropub", echo.HandlerFunc(micropub.HandleMicropubDelete), roleAuthorization("admin"))
+
+		// Add routes for login
+		e.Router.GET("/login", echo.HandlerFunc(handleLoginPage))
+		e.Router.POST("/login", echo.HandlerFunc(handleLogin))
+
+		return nil
+	})
+
+	if err := app.Start(); err != nil {
+		log.Fatal(err)
+	}
 }
