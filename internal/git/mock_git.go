@@ -4,7 +4,9 @@ import (
     "fmt"
 )
 
-type MockGitOperations struct{}
+type MockGitOperations struct {
+    DefaultGitOperations
+}
 
 func (m *MockGitOperations) CreatePost(content map[string]interface{}) error {
     // Simulate creating a post
@@ -21,22 +23,23 @@ func (m *MockGitOperations) DeletePost(content map[string]interface{}) error {
     return nil
 }
 
-func InitializeRepo() error {
+func (m *MockGitOperations) InitializeRepo() error {
     // Simulate initializing a repo
     return nil
 }
 
-func gitAdd(filename string) error {
+func (m *MockGitOperations) gitAdd(filename string) error {
     // Simulate git add
     return nil
 }
 
-func gitCommit(message string) error {
+func (m *MockGitOperations) gitCommit(message string) error {
     // Simulate git commit
     return nil
 }
 
-func gitPush() error {
-    // Simulate git push
-    return nil
+// Override the gitPush method to simulate a push without actually running the command
+func (m *MockGitOperations) gitPush() error {
+    fmt.Println("Simulating git push...")
+    return nil // Simulate a successful push
 }
