@@ -10,6 +10,7 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/models"
+	"github.com/pocketbase/pocketbase/tokens"
 
 	"github.com/harperreed/micropub-service/internal/config"
 	"github.com/harperreed/micropub-service/internal/events"
@@ -83,7 +84,7 @@ func handleLogin(c echo.Context) error {
 		return c.String(http.StatusUnauthorized, "Invalid email or password")
 	}
 
-	token, err := core.NewAuthToken(app, authRecord)
+	token, err := tokens.NewRecordAuthToken(app, authRecord)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to create auth token")
 	}
@@ -94,7 +95,7 @@ func handleLogin(c echo.Context) error {
 
 	c.SetCookie(&http.Cookie{
 		Name:     "pb_auth",
-		Value:    token.Token,
+		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
@@ -102,7 +103,7 @@ func handleLogin(c echo.Context) error {
 	})
 
 	return c.JSON(http.StatusOK, map[string]string{
-		"token": token.Token,
+		"token": token,
 		"role":  role,
 	})
 }
@@ -123,8 +124,8 @@ func main() {
 	micropub.SetEventEmitter(eventEmitter)
 
 	// Initialize Git repository
-	if err := git.InitializeRepo(cfg.GitRepoPath); err != nil {
-		log.Fatalf("Failed to initialize Git repository: %v", err)
+	if err := git.InitializeRepo(); err != nil {
+    	log.Fatalf("Failed to initialize Git repository: %v", err)
 	}
 
 	// Set up file cleanup process

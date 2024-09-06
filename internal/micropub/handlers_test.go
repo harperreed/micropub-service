@@ -18,6 +18,16 @@ func (m *MockGitOperations) UpdatePost(content map[string]interface{}) error {
 	return nil
 }
 
+func (m *MockGitOperations) DeletePost(content map[string]interface{}) error {
+    // Mock implementation
+    return nil
+}
+
+func (m *MockGitOperations) CreatePost(content map[string]interface{}) error {
+    // Mock implementation
+    return nil
+}
+
 func TestHandleMicropubUpdate(t *testing.T) {
 	// Create a new Echo instance
 	e := echo.New()
