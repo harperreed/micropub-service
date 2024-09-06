@@ -25,81 +25,163 @@ type DefaultGitOperations struct{}
 var GitOps GitOperations = &DefaultGitOperations{}
 
 func (g *DefaultGitOperations) UpdatePost(content map[string]interface{}) error {
-	url, ok := content["url"].(string)
-	if !ok {
-		return fmt.Errorf("invalid URL")
-	}
+    url, ok := content["url"].(string)
+    if !ok {
+        return fmt.Errorf("invalid URL")
+    }
 
-	title, ok := content["title"].(string)
-	if !ok {
-		return fmt.Errorf("invalid title")
-	}
+    properties, ok := content["properties"].(map[string]interface{})
+    if !ok {
+        return fmt.Errorf("invalid properties")
+    }
 
-	body, ok := content["content"].(string)
-	if !ok {
-		return fmt.Errorf("invalid content")
-	}
+    var title, body string
 
-	filename := filepath.Base(url)
-	filePath := filepath.Join(RepoPath, filename)
+    if titleValue, ok := properties["title"]; ok {
+        if titleArray, ok := titleValue.([]interface{}); ok && len(titleArray) > 0 {
+            title, _ = titleArray[0].(string)
+        } else if titleStr, ok := titleValue.(string); ok {
+            title = titleStr
+        }
+    }
 
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open file: %v", err)
-	}
-	defer file.Close()
+    if contentValue, ok := properties["content"]; ok {
+        if contentArray, ok := contentValue.([]interface{}); ok && len(contentArray) > 0 {
+            body, _ = contentArray[0].(string)
+        } else if contentStr, ok := contentValue.(string); ok {
+            body = contentStr
+        }
+    }
 
-	_, err = fmt.Fprintf(file, "---\ntitle: %s\ndate: %s\n---\n\n%s", title, time.Now().Format(time.RFC3339), body)
-	if err != nil {
-		return fmt.Errorf("failed to write content to file: %v", err)
-	}
+    if title == "" && body == "" {
+        return fmt.Errorf("no updates provided")
+    }
 
-	if err := gitAdd(filename); err != nil {
-		return err
-	}
+    filename := filepath.Base(url)
+    filePath := filepath.Join(RepoPath, filename)
 
-	if err := gitCommit(fmt.Sprintf("Update post: %s", title)); err != nil {
-		return err
-	}
+    // Read existing content
+    existingContent, err := os.ReadFile(filePath)
+    if err != nil {
+        return fmt.Errorf("failed to read existing file: %v", err)
+    }
 
-	if err := gitPush(); err != nil {
-		return err
-	}
+    // Update content
+    updatedContent := string(existingContent)
+    if title != "" {
+        updatedContent = updateFrontMatter(updatedContent, "title", title)
+    }
+    if body != "" {
+        updatedContent = updateBody(updatedContent, body)
+    }
 
-	return nil
+    // Write updated content
+    err = os.WriteFile(filePath, []byte(updatedContent), 0644)
+    if err != nil {
+        return fmt.Errorf("failed to write updated content: %v", err)
+    }
+
+    if err := gitAdd(filename); err != nil {
+        return err
+    }
+
+    if err := gitCommit(fmt.Sprintf("Update post: %s", filename)); err != nil {
+        return err
+    }
+
+    if err := gitPush(); err != nil {
+        return err
+    }
+
+    return nil
+}
+
+func updateFrontMatter(content, key, value string) string {
+    lines := strings.Split(content, "\n")
+    inFrontMatter := false
+    for i, line := range lines {
+        if line == "---" {
+            inFrontMatter = !inFrontMatter
+            continue
+        }
+        if inFrontMatter && strings.HasPrefix(line, key+":") {
+            lines[i] = fmt.Sprintf("%s: %s", key, value)
+            break
+        }
+    }
+    return strings.Join(lines, "\n")
+}
+
+func updateBody(content, newBody string) string {
+    parts := strings.SplitN(content, "---", 3)
+    if len(parts) < 3 {
+        return content
+    }
+    return parts[0] + "---" + parts[1] + "---\n" + newBody
 }
 
 func (g *DefaultGitOperations) CreatePost(content map[string]interface{}) error {
-	title := content["title"].(string)
-	body := content["content"].(string)
+    properties, ok := content["properties"].(map[string]interface{})
+    if !ok {
+        return fmt.Errorf("invalid properties")
+    }
 
-	filename := fmt.Sprintf("%s-%s.md", time.Now().Format("2006-01-02"), sanitizeFilename(title))
-	filePath := filepath.Join(RepoPath, filename)
+    var title, body string
 
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %v", err)
-	}
-	defer file.Close()
+    // Extract title
+    if titleValue, ok := properties["title"]; ok {
+        if titleSlice, ok := titleValue.([]interface{}); ok && len(titleSlice) > 0 {
+            title, _ = titleSlice[0].(string)
+        } else if titleStr, ok := titleValue.(string); ok {
+            title = titleStr
+        }
+    }
+    if title == "" {
+        title = "Untitled Post"
+    }
 
-	_, err = fmt.Fprintf(file, "---\ntitle: %s\ndate: %s\n---\n\n%s", title, time.Now().Format(time.RFC3339), body)
-	if err != nil {
-		return fmt.Errorf("failed to write content to file: %v", err)
-	}
+    // Extract content
+    if contentValue, ok := properties["content"]; ok {
+        if contentSlice, ok := contentValue.([]interface{}); ok && len(contentSlice) > 0 {
+            body, _ = contentSlice[0].(string)
+        } else if contentStr, ok := contentValue.(string); ok {
+            body = contentStr
+        }
+    }
+    if body == "" {
+        return fmt.Errorf("missing content")
+    }
 
-	if err := gitAdd(filename); err != nil {
-		return err
-	}
+    filename := fmt.Sprintf("%s-%s.md", time.Now().Format("2006-01-02"), sanitizeFilename(title))
+    filePath := filepath.Join(RepoPath, filename)
 
-	if err := gitCommit(fmt.Sprintf("Add post: %s", title)); err != nil {
-		return err
-	}
+    file, err := os.Create(filePath)
+    if err != nil {
+        return fmt.Errorf("failed to create file: %v", err)
+    }
+    defer file.Close()
 
-	if err := gitPush(); err != nil {
-		return err
-	}
+    _, err = fmt.Fprintf(file, "---\ntitle: %s\ndate: %s\n---\n\n%s", title, time.Now().Format(time.RFC3339), body)
+    if err != nil {
+        return fmt.Errorf("failed to write content to file: %v", err)
+    }
 
-	return nil
+    if err := gitAdd(filename); err != nil {
+        return err
+    }
+
+    if err := gitCommit(fmt.Sprintf("Add post: %s", title)); err != nil {
+        return err
+    }
+
+    if err := gitPush(); err != nil {
+        return err
+    }
+
+    // Set the URL in the content map
+    content["url"] = fmt.Sprintf("/%s", filename)
+
+    return nil
 }
 
 func InitializeRepo() error {
