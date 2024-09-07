@@ -1,3 +1,7 @@
+> [!WARNING]  
+> WORK IN VERY MUCH PROGRESS
+
+
 # Micropub to Git-Powered Blogs
 
 ## Overview
