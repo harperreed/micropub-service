@@ -14,7 +14,6 @@ type MockGitOperations struct {
 // Add these methods to your MockGitOperations struct
 
 func (m *MockGitOperations) CreatePost(content map[string]interface{}) error {
-    // Simulate creating a post
     properties := content["properties"].(map[string]interface{})
     title := "Untitled Post"
     if titleValue, ok := properties["title"]; ok {
@@ -23,12 +22,26 @@ func (m *MockGitOperations) CreatePost(content map[string]interface{}) error {
         }
     }
     filename := fmt.Sprintf("%s-%s.md", time.Now().Format("2006-01-02"), sanitizeFilename(title))
+    filePath := filepath.Join(RepoPath, filename)
+
+    // Create the file
+    file, err := os.Create(filePath)
+    if err != nil {
+        return err
+    }
+    defer file.Close()
+
+    // Write some content to the file
+    _, err = file.WriteString("Test content")
+    if err != nil {
+        return err
+    }
+
     content["url"] = fmt.Sprintf("/%s", filename)
     return nil
 }
 
 func (m *MockGitOperations) UpdatePost(content map[string]interface{}) error {
-    // Simulate updating a post
     url, ok := content["url"].(string)
     if !ok {
         return fmt.Errorf("invalid URL")
@@ -41,7 +54,6 @@ func (m *MockGitOperations) UpdatePost(content map[string]interface{}) error {
 }
 
 func (m *MockGitOperations) DeletePost(content map[string]interface{}) error {
-    // Simulate deleting a post
     url, ok := content["url"].(string)
     if !ok {
         return fmt.Errorf("invalid URL")

@@ -5,72 +5,78 @@ import (
 	"path/filepath"
 	"testing"
 	// "time"
+	"fmt"
 )
 
 func TestMain(m *testing.M) {
-	// Setup
-	origRepoPath := RepoPath
-	RepoPath = filepath.Join(os.TempDir(), "test-repo")
-	GitOps = &MockGitOperations{}
+    // Setup
+    origRepoPath := RepoPath
+    RepoPath = filepath.Join(os.TempDir(), "test-repo")
+    err := os.MkdirAll(RepoPath, 0755)
+    if err != nil {
+        fmt.Printf("Failed to create test directory: %v\n", err)
+        os.Exit(1)
+    }
+    GitOps = &MockGitOperations{}
 
-	// Run tests
-	code := m.Run()
+    // Run tests
+    code := m.Run()
 
-	// Teardown
-	os.RemoveAll(RepoPath)
-	RepoPath = origRepoPath
+    // Teardown
+    os.RemoveAll(RepoPath)
+    RepoPath = origRepoPath
 
-	os.Exit(code)
+    os.Exit(code)
 }
 
 // TestCreatePost tests the CreatePost function
 func TestCreatePost(t *testing.T) {
-	tests := []struct {
-		name    string
-		content map[string]interface{}
-		wantErr bool
-	}{
-		{
-			name: "Valid post",
-			content: map[string]interface{}{
-				"properties": map[string]interface{}{
-					"title":   []interface{}{"Test Post"},
-					"content": []interface{}{"This is a test post"},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "Missing content",
-			content: map[string]interface{}{
-				"properties": map[string]interface{}{
-					"title": []interface{}{"Test Post"},
-				},
-			},
-			wantErr: true,
-		},
-		// Add more test cases here
-	}
+    tests := []struct {
+        name    string
+        content map[string]interface{}
+        wantErr bool
+    }{
+        {
+            name: "Valid post",
+            content: map[string]interface{}{
+                "properties": map[string]interface{}{
+                    "title":   []interface{}{"Test Post"},
+                    "content": []interface{}{"This is a test post"},
+                },
+            },
+            wantErr: false,
+        },
+        {
+            name: "Missing content",
+            content: map[string]interface{}{
+                "properties": map[string]interface{}{
+                    "title": []interface{}{"Test Post"},
+                },
+            },
+            wantErr: true,
+        },
+    }
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := GitOps.CreatePost(tt.content)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CreatePost() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if err == nil {
-				// Check if file was created
-				url, ok := tt.content["url"].(string)
-				if !ok {
-					t.Errorf("CreatePost() did not set URL in content map")
-				}
-				filePath := filepath.Join(RepoPath, filepath.Base(url))
-				if _, err := os.Stat(filePath); os.IsNotExist(err) {
-					t.Errorf("CreatePost() file not created: %s", filePath)
-				}
-			}
-		})
-	}
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            err := GitOps.CreatePost(tt.content)
+            if (err != nil) != tt.wantErr {
+                t.Errorf("CreatePost() error = %v, wantErr %v", err, tt.wantErr)
+            }
+            if err == nil {
+                // Check if file was created
+                url, ok := tt.content["url"].(string)
+                if !ok {
+                    t.Errorf("CreatePost() did not set URL in content map")
+                } else {
+                    filePath := filepath.Join(RepoPath, filepath.Base(url))
+                    if _, err := os.Stat(filePath); os.IsNotExist(err) {
+                        t.Errorf("CreatePost() file not created: %s", filePath)
+                    }
+                }
+            }
+        })
+    }
 }
 
 // TestUpdatePost tests the UpdatePost function
