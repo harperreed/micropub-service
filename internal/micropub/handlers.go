@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"fmt"
+	"strings"
 
 	"github.com/harperreed/micropub-service/internal/git"
 	"github.com/labstack/echo/v5"
@@ -115,21 +116,23 @@ func parseContent(c echo.Context) (map[string]interface{}, error) {
 
     switch contentType {
     case "application/x-www-form-urlencoded":
-        if err := req.ParseForm(); err != nil {
-            return nil, echo.NewHTTPError(http.StatusBadRequest, "Error parsing form data: "+err.Error())
+    if err := req.ParseForm(); err != nil {
+        return nil, echo.NewHTTPError(http.StatusBadRequest, "Error parsing form data: "+err.Error())
+    }
+    content = make(map[string]interface{})
+    properties := make(map[string]interface{})
+    for key, values := range req.Form {
+        if key == "h" {
+            content["type"] = []interface{}{fmt.Sprintf("h-%s", values[0])}
+        } else if strings.HasSuffix(key, "[]") {
+            properties[strings.TrimSuffix(key, "[]")] = values
+        } else if len(values) == 1 {
+            properties[key] = values[0]
+        } else {
+            properties[key] = values
         }
-        content = make(map[string]interface{})
-        properties := make(map[string]interface{})
-        for key, values := range req.Form {
-            if key == "h" {
-                content["type"] = []interface{}{fmt.Sprintf("h-%s", values[0])}
-            } else if len(values) == 1 {
-                properties[key] = values[0]
-            } else {
-                properties[key] = values
-            }
-        }
-        content["properties"] = properties
+    }
+    content["properties"] = properties
     case "application/json":
         if err := json.NewDecoder(req.Body).Decode(&content); err != nil {
             return nil, echo.NewHTTPError(http.StatusBadRequest, "Error parsing JSON: "+err.Error())

@@ -21,6 +21,7 @@ type MockGitOperations struct {
     UpdatePostError error
     DeletePostError error
     MockFileContent string
+    LastContent     map[string]interface{}
 }
 
 // Add this struct
@@ -41,9 +42,15 @@ func (m *MockGitOperations) CreatePost(content map[string]interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid properties")
 	}
-	contentValue, ok := properties["content"].([]interface{})
-	if !ok || len(contentValue) == 0 {
+	contentValue, ok := properties["content"]
+	if !ok {
 		return fmt.Errorf("invalid content")
+	}
+	// Check if content is a string (form-encoded) or a slice (JSON)
+	if _, isString := contentValue.(string); !isString {
+		if contentSlice, isSlice := contentValue.([]interface{}); !isSlice || len(contentSlice) == 0 {
+			return fmt.Errorf("invalid content")
+		}
 	}
 	// Simulate setting the URL
 	content["url"] = "https://example.com/new-post"
@@ -286,31 +293,36 @@ func TestHandleMicropubCreate(t *testing.T) {
 	})
 
 	t.Run("SuccessfulCreateFormEncoded", func(t *testing.T) {
-		formData := url.Values{}
-		formData.Set("h", "entry")
-		formData.Set("content", "Ahoy, world!")
-		formData.Add("category[]", "test")
-		formData.Add("category[]", "micropub")
+    formData := url.Values{}
+    formData.Set("h", "entry")
+    formData.Set("content", "Ahoy, world!")
+    formData.Add("category[]", "test")
+    formData.Add("category[]", "micropub")
 
-		req := httptest.NewRequest(http.MethodPost, "/micropub", strings.NewReader(formData.Encode()))
-		req.Header.Set(echo.HeaderContentType, "application/x-www-form-urlencoded")
+    req := httptest.NewRequest(http.MethodPost, "/micropub", strings.NewReader(formData.Encode()))
+    req.Header.Set(echo.HeaderContentType, "application/x-www-form-urlencoded")
 
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
+    rec := httptest.NewRecorder()
+    c := e.NewContext(req, rec)
 
-		// Mock git operations
-		originalGitOps := git.GitOps
-		git.GitOps = &MockGitOperations{}
-		defer func() { git.GitOps = originalGitOps }()
+    // Mock git operations
+    mockGitOps := &MockGitOperations{}
+    originalGitOps := git.GitOps
+    git.GitOps = mockGitOps
+    defer func() { git.GitOps = originalGitOps }()
 
-		if err := HandleMicropubCreate(c); err != nil {
-			t.Fatalf("HandleMicropubCreate failed: %v", err)
-		}
+    err := HandleMicropubCreate(c)
+    if err != nil {
+        t.Fatalf("HandleMicropubCreate failed: %v", err)
+    }
 
-		if rec.Code != http.StatusCreated {
-			t.Errorf("Expected status Created; got %v", rec.Code)
-		}
-	})
+    if rec.Code != http.StatusCreated {
+        t.Errorf("Expected status Created; got %v", rec.Code)
+    }
+
+    // Print the content received by MockGitOperations
+    t.Logf("Content received by MockGitOperations: %+v", mockGitOps.LastContent)
+})
 
 	t.Run("MissingType", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/micropub", strings.NewReader(`{"properties":{"content":["Ahoy, world!"]}}`))
