@@ -17,7 +17,7 @@ func TestMain(m *testing.M) {
         fmt.Printf("Failed to create test directory: %v\n", err)
         os.Exit(1)
     }
-    GitOps = &MockGitOperations{}
+    GitOps = NewMockGitOperations()
 
     // Run tests
     code := m.Run()
@@ -91,7 +91,7 @@ func TestCreatePost(t *testing.T) {
 				if !ok {
 					t.Errorf("CreatePost() did not set URL in content map")
 				} else {
-					if _, exists := mockGitOps.Posts[url]; !exists {
+					if _, exists := mockGitOps.Posts[filepath.Base(url)]; !exists {
 						t.Errorf("CreatePost() post not created: %s", url)
 					}
 				}
