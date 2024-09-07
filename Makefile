@@ -29,9 +29,5 @@ deps:
 	$(GOGET) ./...
 	$(GOMOD) tidy
 
-changelog:
-    git log --pretty=format:'- **%ad**: %s' --date=short >changelog.md
-    # sed -i '' '/Updated gitlog/d' "changelog.md"
-
 
 .PHONY: all build test clean run deps

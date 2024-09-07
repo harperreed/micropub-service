@@ -9,7 +9,7 @@ description = 'Remove all the various output.txts'                              
 
 
 [tasks]
-changelog = "git log --pretty=format:'- **%ad**: %s' --date=short >changelog.md"
+changelog = "git log --pretty=format:'- **%ad**: %s' --date=short >CHANGELOG.md"
 build = "go build -o server -v ./cmd/server"
 test = "go test -v ./... -coverprofile=coverage.out -covermode=atomic && go tool cover -html=coverage.out -o coverage.html"
 clean = "go clean && rm -f server"
