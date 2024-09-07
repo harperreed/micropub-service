@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
+	"gopkg.in/yaml.v2"
 	"strings"
 	"time"
 )
@@ -94,6 +96,44 @@ func (g *DefaultGitOperations) UpdatePost(content map[string]interface{}) error 
     }
 
     return nil
+}
+
+// Add this to your git/operations.go file
+func SplitFrontmatterAndContent(content string) (map[string]interface{}, string, error) {
+    parts := strings.SplitN(content, "---", 3)
+    if len(parts) != 3 {
+        return nil, "", fmt.Errorf("invalid frontmatter format")
+    }
+
+    var frontmatter map[string]interface{}
+    err := yaml.Unmarshal([]byte(parts[1]), &frontmatter)
+    if err != nil {
+        return nil, "", err
+    }
+
+    return frontmatter, parts[2], nil
+}
+
+func CreateContentWithFrontmatter(frontmatter map[string]interface{}, content string) string {
+    var sb strings.Builder
+    sb.WriteString("---\n")
+
+    // Sort the keys for consistent output
+    var keys []string
+    for k := range frontmatter {
+        keys = append(keys, k)
+    }
+    sort.Strings(keys)
+
+    for _, k := range keys {
+        v := frontmatter[k]
+        sb.WriteString(fmt.Sprintf("%s: %v\n", k, v))
+    }
+
+    sb.WriteString("---\n")
+    sb.WriteString(content)
+
+    return sb.String()
 }
 
 func updateFrontMatter(content, key, value string) string {

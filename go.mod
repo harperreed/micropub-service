@@ -6,6 +6,7 @@ require (
 	github.com/labstack/echo/v5 v5.0.0-20230722203903-ec5b858dab61
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pocketbase/pocketbase v0.22.20
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (

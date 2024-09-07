@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
-	"path/filepath"
-	"os"
+
 	"github.com/harperreed/micropub-service/internal/git"
 	"github.com/labstack/echo/v5"
 )
@@ -48,11 +49,51 @@ func (m *MockGitOperations) CreatePost(content map[string]interface{}) error {
 }
 
 func (m *MockGitOperations) UpdatePost(content map[string]interface{}) error {
-	// Mock implementation
-	if m.UpdatePostError != nil {
-		return m.UpdatePostError
-	}
-	return nil
+    url, ok := content["url"].(string)
+    if !ok {
+        return fmt.Errorf("invalid URL")
+    }
+
+    filename := filepath.Base(url)
+    filePath := filepath.Join(git.RepoPath, filename)
+
+    // Read the existing content
+    existingContent, err := os.ReadFile(filePath)
+    if err != nil {
+        return err
+    }
+
+    // Parse the existing frontmatter
+    frontmatter, _, err := git.SplitFrontmatterAndContent(string(existingContent))
+    if err != nil {
+        return err
+    }
+
+    // Update the frontmatter with new values
+    if replace, ok := content["replace"].(map[string]interface{}); ok {
+        for key, value := range replace {
+            frontmatter[key] = value
+        }
+    }
+
+    // Get the updated content
+    var updatedContent string
+    if contentSlice, ok := content["replace"].(map[string]interface{})["content"].([]interface{}); ok && len(contentSlice) > 0 {
+        if contentStr, ok := contentSlice[0].(string); ok {
+            updatedContent = contentStr
+        }
+    }
+
+    // Create the updated content with frontmatter
+    fullContent := git.CreateContentWithFrontmatter(frontmatter, updatedContent)
+
+    // Write the updated content to the file
+    err = os.WriteFile(filePath, []byte(fullContent), 0644)
+    if err != nil {
+        return err
+    }
+
+    return nil
 }
 
 func (m *MockGitOperations) DeletePost(content map[string]interface{}) error {
