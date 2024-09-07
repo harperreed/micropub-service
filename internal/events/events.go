@@ -32,7 +32,7 @@ func (e *EventEmitter) Emit(event interface{}) {
 	}
 }
 
-func getEventType(event interface{}) string {
+func GetEventType(event interface{}) string {
 	switch event.(type) {
 	case FileEvent:
 		return "file"
