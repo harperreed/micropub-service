@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	 "regexp"
 	"gopkg.in/yaml.v2"
 	"strings"
 	"time"
@@ -295,22 +296,25 @@ func (g *DefaultGitOperations) DeletePost(content map[string]interface{}) error 
 }
 
 func sanitizeFilename(filename string) string {
-	// Replace spaces with hyphens
-	sanitized := strings.ReplaceAll(filename, " ", "-")
+    // Replace spaces with hyphens
+    sanitized := strings.ReplaceAll(filename, " ", "-")
 
-	// Remove any characters that aren't alphanumeric, hyphen, or underscore
-	sanitized = strings.Map(func(r rune) rune {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
-			return r
-		}
-		return -1
-	}, sanitized)
+    // Remove any characters that aren't alphanumeric, hyphen, or underscore
+    sanitized = strings.Map(func(r rune) rune {
+        if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+            return r
+        }
+        return -1
+    }, sanitized)
 
-	// Convert to lowercase
-	sanitized = strings.ToLower(sanitized)
+    // Convert to lowercase
+    sanitized = strings.ToLower(sanitized)
 
-	// Trim any leading or trailing hyphens or underscores
-	sanitized = strings.Trim(sanitized, "-_")
+    // Replace multiple hyphens with a single hyphen
+    sanitized = regexp.MustCompile(`-+`).ReplaceAllString(sanitized, "-")
 
-	return sanitized
+    // Trim any leading or trailing hyphens or underscores
+    sanitized = strings.Trim(sanitized, "-_")
+
+    return sanitized
 }

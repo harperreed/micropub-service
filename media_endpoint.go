@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 )
