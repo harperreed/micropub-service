@@ -1,3 +1,4 @@
+// Package git provides functionality for managing git operations on blog posts.
 package git
 
 import (
@@ -6,97 +7,170 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
-	 "regexp"
+	"regexp"
 	"gopkg.in/yaml.v2"
 	"strings"
 	"time"
+	"log"
 )
 
-var RepoPath = "./content" // You might want to make this configurable
+// RepoPath is the path to the content repository. It can be configured as needed.
+var RepoPath = "./content"
 
-// GitOperations interface defines the methods for git operations
+// GitOperations interface defines the methods for git operations on blog posts.
 type GitOperations interface {
+	// CreatePost creates a new blog post with the given content.
 	CreatePost(content map[string]interface{}) error
+
+	// UpdatePost updates an existing blog post with new content.
 	UpdatePost(content map[string]interface{}) error
+
+	// DeletePost deletes an existing blog post.
 	DeletePost(content map[string]interface{}) error
+
+	// InitializeRepo initializes a new git repository for blog posts.
+	InitializeRepo() error
 }
 
-
-// DefaultGitOperations is the default implementation of GitOperations
+// DefaultGitOperations is the default implementation of GitOperations.
 type DefaultGitOperations struct{}
 
+// GitOps is the global instance of GitOperations used throughout the package.
 var GitOps GitOperations = &DefaultGitOperations{}
 
+// CreatePost creates a new blog post with the given content.
+// It takes a map containing the post properties and returns an error if the operation fails.
+func (g *DefaultGitOperations) CreatePost(content map[string]interface{}) error {
+	properties, ok := content["properties"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid properties")
+	}
+
+	var title, body string
+
+	// Extract title
+	if titleValue, ok := properties["title"]; ok {
+		if titleSlice, ok := titleValue.([]interface{}); ok && len(titleSlice) > 0 {
+			title, _ = titleSlice[0].(string)
+		} else if titleStr, ok := titleValue.(string); ok {
+			title = titleStr
+		}
+	}
+	if title == "" {
+		title = "Untitled Post"
+	}
+
+	// Extract content
+	if contentValue, ok := properties["content"]; ok {
+		if contentSlice, ok := contentValue.([]interface{}); ok && len(contentSlice) > 0 {
+			body, _ = contentSlice[0].(string)
+		} else if contentStr, ok := contentValue.(string); ok {
+			body = contentStr
+		}
+	}
+	if body == "" {
+		return fmt.Errorf("missing content")
+	}
+
+	filename := fmt.Sprintf("%s-%s.md", time.Now().Format("2006-01-02"), sanitizeFilename(title))
+	filePath := filepath.Join(RepoPath, filename)
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
+
+	_, err = fmt.Fprintf(file, "---\ntitle: %s\ndate: %s\n---\n\n%s", title, time.Now().Format(time.RFC3339), body)
+	if err != nil {
+		return fmt.Errorf("failed to write content to file: %w", err)
+	}
+
+	if err := g.gitAdd(filename); err != nil {
+		return fmt.Errorf("failed to git add: %w", err)
+	}
+
+	if err := g.gitCommit(fmt.Sprintf("Add post: %s", title)); err != nil {
+		return fmt.Errorf("failed to git commit: %w", err)
+	}
+
+	if err := g.gitPush(); err != nil {
+		return fmt.Errorf("failed to git push: %w", err)
+	}
+
+	// Set the URL in the content map
+	content["url"] = fmt.Sprintf("/%s", filename)
+
+	log.Printf("Created post: %s", filename)
+	return nil
+}
+
+// UpdatePost updates an existing post with new content
 func (g *DefaultGitOperations) UpdatePost(content map[string]interface{}) error {
-    url, ok := content["url"].(string)
-    if !ok {
-        return fmt.Errorf("invalid URL")
-    }
+	url, ok := content["url"].(string)
+	if !ok {
+		return fmt.Errorf("invalid URL")
+	}
 
-    properties, ok := content["properties"].(map[string]interface{})
-    if !ok {
-        return fmt.Errorf("invalid properties")
-    }
+	properties, ok := content["properties"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid properties")
+	}
 
-    var title, body string
+	filename := filepath.Base(url)
+	filePath := filepath.Join(RepoPath, filename)
 
-    if titleValue, ok := properties["title"]; ok {
-        if titleArray, ok := titleValue.([]interface{}); ok && len(titleArray) > 0 {
-            title, _ = titleArray[0].(string)
-        } else if titleStr, ok := titleValue.(string); ok {
-            title = titleStr
-        }
-    }
+	// Read existing content
+	existingContent, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read existing file: %w", err)
+	}
 
-    if contentValue, ok := properties["content"]; ok {
-        if contentArray, ok := contentValue.([]interface{}); ok && len(contentArray) > 0 {
-            body, _ = contentArray[0].(string)
-        } else if contentStr, ok := contentValue.(string); ok {
-            body = contentStr
-        }
-    }
+	frontmatter, oldContent, err := SplitFrontmatterAndContent(string(existingContent))
+	if err != nil {
+		return fmt.Errorf("failed to parse existing content: %w", err)
+	}
 
-    if title == "" && body == "" {
-        return fmt.Errorf("no updates provided")
-    }
+	// Update title if provided
+	if titleValue, ok := properties["title"]; ok {
+		if titleArray, ok := titleValue.([]interface{}); ok && len(titleArray) > 0 {
+			frontmatter["title"] = titleArray[0]
+		} else if titleStr, ok := titleValue.(string); ok {
+			frontmatter["title"] = titleStr
+		}
+	}
 
-    filename := filepath.Base(url)
-    filePath := filepath.Join(RepoPath, filename)
+	// Update content if provided
+	if contentValue, ok := properties["content"]; ok {
+		if contentArray, ok := contentValue.([]interface{}); ok && len(contentArray) > 0 {
+			oldContent = contentArray[0].(string)
+		} else if contentStr, ok := contentValue.(string); ok {
+			oldContent = contentStr
+		}
+	}
 
-    // Read existing content
-    existingContent, err := os.ReadFile(filePath)
-    if err != nil {
-        return fmt.Errorf("failed to read existing file: %v", err)
-    }
+	updatedContent := CreateContentWithFrontmatter(frontmatter, oldContent)
 
-    // Update content
-    updatedContent := string(existingContent)
-    if title != "" {
-        updatedContent = updateFrontMatter(updatedContent, "title", title)
-    }
-    if body != "" {
-        updatedContent = updateBody(updatedContent, body)
-    }
+	// Write updated content
+	err = os.WriteFile(filePath, []byte(updatedContent), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write updated content: %w", err)
+	}
 
-    // Write updated content
-    err = os.WriteFile(filePath, []byte(updatedContent), 0644)
-    if err != nil {
-        return fmt.Errorf("failed to write updated content: %v", err)
-    }
+	if err := g.gitAdd(filename); err != nil {
+		return fmt.Errorf("failed to git add: %w", err)
+	}
 
-    if err := gitAdd(filename); err != nil {
-        return err
-    }
+	if err := g.gitCommit(fmt.Sprintf("Update post: %s", filename)); err != nil {
+		return fmt.Errorf("failed to git commit: %w", err)
+	}
 
-    if err := gitCommit(fmt.Sprintf("Update post: %s", filename)); err != nil {
-        return err
-    }
+	if err := g.gitPush(); err != nil {
+		return fmt.Errorf("failed to git push: %w", err)
+	}
 
-    if err := gitPush(); err != nil {
-        return err
-    }
-
-    return nil
+	log.Printf("Updated post: %s", url)
+	return nil
 }
 
 // Add this to your git/operations.go file
