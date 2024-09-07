@@ -1,0 +1,77 @@
+- **2024-09-06**: 🎉🎈🎶 Big Changes in MockGitOperations! 🎶🎈🎉
+- **2024-09-06**: 🎉 Updated .gitignore to include additional files! 🎉
+- **2024-09-06**: 🚀✨ Added comprehensive tests for Git operations! 🎉💻
+- **2024-09-06**: 🎉🏗️ Major Changes to MockGit and Git Operations! 🚀🏁
+- **2024-09-06**: 🎉 Improve Micropub Handler Logic & Tests! 🚀
+- **2024-09-06**: 🎉🎉 Major Micropub Action Handling Overhaul! 🎉🎉
+- **2024-09-06**: 🆕✨ Revamped Git Operations and Configs! 🥳✨
+- **2024-09-06**: 🎉🎉 Update .gitignore and go.mod – Fixes and Redundancies!!! 🚀🚀
+- **2024-09-06**: Merge pull request #1 from harperreed/test-almost-passing-micropub-handlers
+- **2024-09-06**: Create LICENSE
+- **2024-09-06**: Update README.md
+- **2024-09-06**: Add MockGitOperations methods to enhance simulation 🎉🚀
+- **2024-09-06**: 🎉🎊 Major Refactor and New Fun Rules! 🎊🎉
+- **2024-09-06**: Refactor Micropub Handlers for Better Error Handling and Code Cleanliness 🎉🚀
+- **2024-09-06**: Add .mise.toml for build and task configurations 🎉🚀
+- **2024-09-06**: 🎉 Refactor Micropub Handlers and Enhance Error Responses 🚀
+- **2024-09-06**: 🚀 Update authentication token handling and improve Git initialization logic! 🎉
+- **2024-09-06**: 🎉✨ New Micropub Specification Added! 🚀📜
+- **2024-09-06**: 📝 Add Ten Rules for Proper Test Driven Development to TESTING.md 🎉
+- **2024-09-06**: 🚀 Major Refactor & Clean-Up with New Config Management! 🎉
+- **2024-09-05**: fix: Add package declaration and basic structure to config.go
+- **2024-09-05**: fix: move config.go content to internal/config.go
+- **2024-09-05**: feat: Add internal config module
+- **2024-09-05**: fix: Add configuration loading and usage
+- **2024-09-05**: fix: Create internal/config package and update import path in main.go
+- **2024-09-05**: fix: Update import paths in main.go
+- **2024-09-05**: fix: Update import paths in cmd/server/main.go
+- **2024-09-05**: feat: Add go-cache dependency and use it for user role caching
+- **2024-09-05**: feat: Add configuration loading and use Git repo path from config
+- **2024-09-05**: fix: Update tests to remove dependency on echo
+- **2024-09-05**: fix: Fix build and test failures in metadata_test.go and internal/micropub/handlers_test.go
+- **2024-09-05**: 🎉🦜 New rules to make coding a swashbucklin' adventure! 🏴‍☠️💰 - Added a new file `AI_RULES.md` with important repository rules and guidelines. - Established rules to ensure everyone talks like pirates. Arrr! 🏴‍☠️ - Emphasized the necessity of test coverage for all code. No shortcuts, matey! 🧪 - Introduced a $200 tip incentive for completing tasks to keep motivation high! 💵💪 - Stressed the importance of following test-driven development for better code quality. 📈 - Provided a pointer to the `todo.md` file to guide developers on getting started. 🚀
+- **2024-09-05**: feat: Add tests and stubs for storing blog entry metadata in PocketBase
+- **2024-09-05**: feat: Implement media endpoint functionality
+- **2024-09-05**: feat: Integrate Git operations with Micropub handlers
+- **2024-09-04**: fix: Update handlers_test.go and main.go
+- **2024-09-04**: Add GitHub Actions workflow for Go tests 🚀🎉 - Created a new file `.github/workflows/go-tests.yaml` to automate testing for Go code on push and pull request events. 💻 - Set up workflow triggers for the `main` branch, ensuring tests run with every code change. 🔄 - Configured the job to run on `ubuntu-latest`, preparing the environment for Go testing. 🐧✨ - Added steps to check out the code, set up Go (version 1.23), install dependencies, and run both standard tests and those with a race detector. 🔍🧪 - This enhancement aims to streamline our development process, catch bugs early, and improve code quality with consistent testing practices! 🛠️🔥
+- **2024-09-04**: 🎉🎉 Major upgrades in the Makefile and go.mod! 🚀💥
+- **2024-09-04**: fix: remove unused import from internal/micropub/handlers.go
+- **2024-09-04**: feat: Integrate file cleanup process with Media Endpoint
+- **2024-09-04**: Updated .gitignore to exclude additional files - Added `pb_data/` to ignore files related to Protobuf data files which could clutter up version control. - Ensured that `vendor/` is still ignored to keep dependency directories clean.
+- **2024-09-04**: 📝 **Add more files to .gitignore and delete go.sum... because why not?! 😜**
+- **2024-09-04**: Add golang.org/x/tools and update dependencies 🚀🛠️
+- **2024-09-04**: fix: Fix undefined functions and unused imports in tests
+- **2024-09-04**: fix: Replace undefined variables with correct ones in internal/git/operations.go
+- **2024-09-04**: fix: Resolve undefined references and test issues
+- **2024-09-04**: feat: Add media endpoint tests and stubs
+- **2024-09-04**: feat: Complete OAuth2 authentication, Git integration, and frontmatter generation
+- **2024-09-04**: fix: remove unused imports in internal/micropub/handlers.go
+- **2024-09-04**: fix: Replace undefined functions and unused variables in internal/micropub/handlers.go
+- **2024-09-04**: fix: Update and delete functionality not yet implemented
+- **2024-09-04**: fix: Update module name to "github.com/harperreed/micropub-service"
+- **2024-09-04**: fix: Improve structure and organization of main.go file
+- **2024-09-04**: build: Add Makefile
+- **2024-09-04**: Add Micropub endpoints and remove old Git operations
+- **2024-09-04**: feat: Reorganize project structure
+- **2024-09-04**: fix: update authentication and token creation logic
+- **2024-09-04**: feat: Implement role-based access control and caching user roles
+- **2024-09-04**: feat: Add login functionality
+- **2024-09-04**: Update dependencies in go.mod and go.sum 🎉
+- **2024-09-04**: fix: Update Echo v4 to v5 in main.go
+- **2024-09-04**: refactor: Remove unnecessary Echo v4 wrappers
+- **2024-09-04**: fix: Resolve Echo v4 and v5 mismatch and add missing functions
+- **2024-09-04**: feat: add Echo framework dependency and update route handlers
+- **2024-09-04**: feat: Add new dependencies for Echo v4 and v5
+- **2024-09-04**: feat: Integrate Echo framework and update handler functions
+- **2024-09-04**: 🎉 Add initial Go module files and .gitignore! 🎉
+- **2024-09-04**: feat: Implement update and delete post actions
+- **2024-09-04**: refactor: Update main.go to address issues and integrate PocketBase
+- **2024-09-04**: feat: Integrate PocketBase into the application
+- **2024-09-04**: fix: mark 'Use PocketBase as the backend for managing the blog index and OAuth2' task as completed
+- **2024-09-04**: feat: Expand OAuth2 authentication and add comprehensive testing
+- **2024-09-04**: feat: Implement Git push functionality and create new branches
+- **2024-09-04**: feat: Implement Git integration for creating posts
+- **2024-09-04**: feat: Implement basic functionality for creating posts in Micropub endpoint
+- **2024-09-04**: feat: Set up Micropub endpoint and initial tests
+- **2024-09-04**: 🎉 New Exciting Features Added! 🚀
