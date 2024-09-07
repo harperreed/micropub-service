@@ -135,11 +135,14 @@ func TestUpdatePost(t *testing.T) {
 			},
 			wantErr: false,
 			check: func(t *testing.T, m *MockGitOperations, url string) {
-				content := m.Posts[url]
-				if !strings.Contains(content, "title: Updated Title") {
+				post := m.Posts[filepath.Base(url)]
+				properties := post["properties"].(map[string]interface{})
+				title := properties["title"].([]interface{})[0].(string)
+				content := properties["content"].([]interface{})[0].(string)
+				if title != "Updated Title" {
 					t.Errorf("Title not updated correctly")
 				}
-				if !strings.Contains(content, "Updated content") {
+				if content != "Updated content" {
 					t.Errorf("Content not updated correctly")
 				}
 			},
@@ -154,11 +157,14 @@ func TestUpdatePost(t *testing.T) {
 			},
 			wantErr: false,
 			check: func(t *testing.T, m *MockGitOperations, url string) {
-				content := m.Posts[url]
-				if !strings.Contains(content, "title: New Title") {
+				post := m.Posts[filepath.Base(url)]
+				properties := post["properties"].(map[string]interface{})
+				title := properties["title"].([]interface{})[0].(string)
+				content := properties["content"].([]interface{})[0].(string)
+				if title != "New Title" {
 					t.Errorf("Title not updated correctly")
 				}
-				if !strings.Contains(content, "Updated content") {
+				if content != "Updated content" {
 					t.Errorf("Content should not have changed")
 				}
 			},
@@ -173,11 +179,14 @@ func TestUpdatePost(t *testing.T) {
 			},
 			wantErr: false,
 			check: func(t *testing.T, m *MockGitOperations, url string) {
-				content := m.Posts[url]
-				if !strings.Contains(content, "title: New Title") {
+				post := m.Posts[filepath.Base(url)]
+				properties := post["properties"].(map[string]interface{})
+				title := properties["title"].([]interface{})[0].(string)
+				content := properties["content"].([]interface{})[0].(string)
+				if title != "New Title" {
 					t.Errorf("Title should not have changed")
 				}
-				if !strings.Contains(content, "New content") {
+				if content != "New content" {
 					t.Errorf("Content not updated correctly")
 				}
 			},

@@ -4,6 +4,7 @@ import (
     "fmt"
     "time"
     "os"
+    "path/filepath"
 )
 
 type MockGitOperations struct {
@@ -28,7 +29,7 @@ func (m *MockGitOperations) CreatePost(content map[string]interface{}) error {
         }
     }
     filename := fmt.Sprintf("%s-%s.md", time.Now().Format("2006-01-02"), sanitizeFilename(title))
-    filePath := RepoPath + "/" + filename
+    filePath := filepath.Join(RepoPath, filename)
 
     // Create the file
     file, err := os.Create(filePath)
