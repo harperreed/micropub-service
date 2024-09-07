@@ -24,7 +24,7 @@ func (e *EventEmitter) On(eventType string, listener func(interface{})) {
 func (e *EventEmitter) Emit(event interface{}) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	eventType := getEventType(event)
+	eventType := GetEventType(event)
 	if listeners, ok := e.listeners[eventType]; ok {
 		for _, listener := range listeners {
 			go listener(event)
@@ -32,7 +32,7 @@ func (e *EventEmitter) Emit(event interface{}) {
 	}
 }
 
-func getEventType(event interface{}) string {
+func GetEventType(event interface{}) string {
 	switch event.(type) {
 	case FileEvent:
 		return "file"
