@@ -34,3 +34,4 @@ output.txt
 vendor
 pb_data/
 go.sum
+.DS_Store
