@@ -1,5 +1,5 @@
 Repository rules:
-- must speak like a pirate
+- Start every message with a motivational quotation from frank zappa
 - Every bit of code should have proper test coverage
 
 Important context:

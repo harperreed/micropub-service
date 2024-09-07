@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"fmt"
 
-	"github.com/labstack/echo/v5"
 	"github.com/harperreed/micropub-service/internal/git"
+	"github.com/labstack/echo/v5"
 )
 
 // FileEvent represents a file-related event
@@ -21,71 +22,83 @@ type EventEmitter interface {
 }
 
 type PostEvent struct {
-    Type   string
-    PostID string
+	Type   string
+	PostID string
 }
 
 var eventEmitter EventEmitter
 
 func HandleMicropubCreate(c echo.Context) error {
-	content, err := parseContent(c)
+    content, err := parseContent(c)
     if err != nil {
-        return echo.NewHTTPError(http.StatusBadRequest, "Invalid request: "+err.Error())
+        return err
     }
 
     // Check if required fields are present
     if content["type"] == nil || len(content["type"].([]interface{})) == 0 {
-        return c.String(http.StatusBadRequest, "Missing 'type' field")
+        return echo.NewHTTPError(http.StatusBadRequest, "Missing 'type' field")
     }
 
     properties, ok := content["properties"].(map[string]interface{})
     if !ok || properties["content"] == nil {
-        return c.String(http.StatusBadRequest, "Missing or invalid 'content' field")
-    }
-
-    if eventEmitter != nil {
-        postID := content["url"].(string) // Assuming the URL is set after creation
-        eventEmitter.Emit(PostEvent{Type: "create", PostID: postID})
+        return echo.NewHTTPError(http.StatusBadRequest, "Missing or invalid 'content' field")
     }
 
     err = git.GitOps.CreatePost(content)
     if err != nil {
-        return c.String(http.StatusInternalServerError, "Failed to create post: "+err.Error())
+        return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create post: "+err.Error())
+    }
+
+    if eventEmitter != nil {
+        postID, _ := content["url"].(string)
+        if postID == "" {
+            postID = "unknown"
+        }
+        eventEmitter.Emit(PostEvent{Type: "create", PostID: postID})
     }
 
     return c.String(http.StatusCreated, "Post created successfully")
 }
 
 func HandleMicropubUpdate(c echo.Context) error {
-	content, err := parseContent(c)
-	if err != nil {
-		return err
-	}
-
-	err = git.GitOps.UpdatePost(content)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to update post")
-	}
-
-	return c.String(http.StatusOK, "Post updated successfully")
-}
-
-func HandleMicropubDelete(c echo.Context) error {
     content, err := parseContent(c)
     if err != nil {
         return err
     }
 
-    if _, ok := content["url"]; !ok {
-        return echo.NewHTTPError(http.StatusBadRequest, "Missing URL for delete action")
+    if content["action"] != "update" || content["url"] == nil {
+        return echo.NewHTTPError(http.StatusBadRequest, "Invalid update request")
     }
 
-    err = git.GitOps.DeletePost(content)
+    // Handle 'replace' action
+    if replace, ok := content["replace"].(map[string]interface{}); ok {
+        content["properties"] = replace
+    }
+
+    err = git.GitOps.UpdatePost(content)
     if err != nil {
-        return c.String(http.StatusInternalServerError, "Failed to delete post")
+        return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update post: "+err.Error())
     }
 
-    return c.String(http.StatusOK, "Post deleted successfully")
+    return c.String(http.StatusOK, "Post updated successfully")
+}
+
+func HandleMicropubDelete(c echo.Context) error {
+	content, err := parseContent(c)
+	if err != nil {
+		return err
+	}
+
+	if _, ok := content["url"]; !ok {
+		return echo.NewHTTPError(http.StatusBadRequest, "Missing URL for delete action")
+	}
+
+	err = git.GitOps.DeletePost(content)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to delete post")
+	}
+
+	return c.String(http.StatusOK, "Post deleted successfully")
 }
 
 func parseContent(c echo.Context) (map[string]interface{}, error) {
@@ -98,7 +111,18 @@ func parseContent(c echo.Context) (map[string]interface{}, error) {
         if err := req.ParseForm(); err != nil {
             return nil, echo.NewHTTPError(http.StatusBadRequest, "Error parsing form data: "+err.Error())
         }
-        content = parseFormToMap(req.PostForm)
+        content = make(map[string]interface{})
+        properties := make(map[string]interface{})
+        for key, values := range req.Form {
+            if key == "h" {
+                content["type"] = []interface{}{fmt.Sprintf("h-%s", values[0])}
+            } else if len(values) == 1 {
+                properties[key] = values[0]
+            } else {
+                properties[key] = values
+            }
+        }
+        content["properties"] = properties
     case "application/json":
         if err := json.NewDecoder(req.Body).Decode(&content); err != nil {
             return nil, echo.NewHTTPError(http.StatusBadRequest, "Error parsing JSON: "+err.Error())
