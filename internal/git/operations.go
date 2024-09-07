@@ -173,6 +173,55 @@ func (g *DefaultGitOperations) UpdatePost(content map[string]interface{}) error 
 	return nil
 }
 
+// InitializeRepo initializes a new git repository for blog posts.
+func (g *DefaultGitOperations) InitializeRepo() error {
+	if _, err := os.Stat(RepoPath); os.IsNotExist(err) {
+		err := os.MkdirAll(RepoPath, 0755)
+		if err != nil {
+			return fmt.Errorf("failed to create content directory: %w", err)
+		}
+	}
+
+	cmd := exec.Command("git", "init")
+	cmd.Dir = RepoPath
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to initialize git repository: %w", err)
+	}
+
+	log.Printf("Initialized git repository at %s", RepoPath)
+	return nil
+}
+
+// gitAdd adds a file to the git repository
+func (g *DefaultGitOperations) gitAdd(filename string) error {
+	cmd := exec.Command("git", "add", filename)
+	cmd.Dir = RepoPath
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to git add: %w", err)
+	}
+	return nil
+}
+
+// gitCommit commits changes to the git repository
+func (g *DefaultGitOperations) gitCommit(message string) error {
+	cmd := exec.Command("git", "commit", "-m", message)
+	cmd.Dir = RepoPath
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to git commit: %w", err)
+	}
+	return nil
+}
+
+// gitPush pushes changes to the remote git repository
+func (g *DefaultGitOperations) gitPush() error {
+	cmd := exec.Command("git", "push")
+	cmd.Dir = RepoPath
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to git push: %w", err)
+	}
+	return nil
+}
+
 // Add this to your git/operations.go file
 func SplitFrontmatterAndContent(content string) (map[string]interface{}, string, error) {
     parts := strings.SplitN(content, "---", 3)
@@ -235,69 +284,8 @@ func updateBody(content, newBody string) string {
     return parts[0] + "---" + parts[1] + "---\n" + newBody
 }
 
-func (g *DefaultGitOperations) CreatePost(content map[string]interface{}) error {
-    properties, ok := content["properties"].(map[string]interface{})
-    if !ok {
-        return fmt.Errorf("invalid properties")
-    }
-
-    var title, body string
-
-    // Extract title
-    if titleValue, ok := properties["title"]; ok {
-        if titleSlice, ok := titleValue.([]interface{}); ok && len(titleSlice) > 0 {
-            title, _ = titleSlice[0].(string)
-        } else if titleStr, ok := titleValue.(string); ok {
-            title = titleStr
-        }
-    }
-    if title == "" {
-        title = "Untitled Post"
-    }
-
-    // Extract content
-    if contentValue, ok := properties["content"]; ok {
-        if contentSlice, ok := contentValue.([]interface{}); ok && len(contentSlice) > 0 {
-            body, _ = contentSlice[0].(string)
-        } else if contentStr, ok := contentValue.(string); ok {
-            body = contentStr
-        }
-    }
-    if body == "" {
-        return fmt.Errorf("missing content")
-    }
-
-    filename := fmt.Sprintf("%s-%s.md", time.Now().Format("2006-01-02"), sanitizeFilename(title))
-    filePath := filepath.Join(RepoPath, filename)
-
-    file, err := os.Create(filePath)
-    if err != nil {
-        return fmt.Errorf("failed to create file: %v", err)
-    }
-    defer file.Close()
-
-    _, err = fmt.Fprintf(file, "---\ntitle: %s\ndate: %s\n---\n\n%s", title, time.Now().Format(time.RFC3339), body)
-    if err != nil {
-        return fmt.Errorf("failed to write content to file: %v", err)
-    }
-
-    if err := gitAdd(filename); err != nil {
-        return err
-    }
-
-    if err := gitCommit(fmt.Sprintf("Add post: %s", title)); err != nil {
-        return err
-    }
-
-    if err := gitPush(); err != nil {
-        return err
-    }
-
-    // Set the URL in the content map
-    content["url"] = fmt.Sprintf("/%s", filename)
-
-    return nil
-}
+// This duplicate CreatePost method should be removed.
+// The original CreatePost method is already defined earlier in the file.
 
 func InitializeRepo() error {
 	if _, err := os.Stat(RepoPath); os.IsNotExist(err) {
