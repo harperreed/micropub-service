@@ -58,11 +58,21 @@ func TestLoad(t *testing.T) {
 }
 
 func TestLoadNonExistentFile(t *testing.T) {
-	// Set the current working directory to a non-existent directory
-	err := os.Chdir("/non/existent/directory")
+	// Create a temporary directory
+	tempDir, err := os.MkdirTemp("", "config_test")
 	require.NoError(t, err)
-	defer os.Chdir("/")
+	defer os.RemoveAll(tempDir)
 
+	// Save the current working directory
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer os.Chdir(oldWd)
+
+	// Change to the temporary directory
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+
+	// Attempt to load the non-existent config file
 	config, err := Load()
 	assert.Error(t, err)
 	assert.Nil(t, config)
