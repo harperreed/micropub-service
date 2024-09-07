@@ -99,8 +99,8 @@ func TestGetEventType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getEventType(tt.event); got != tt.expected {
-				t.Errorf("getEventType() = %v, want %v", got, tt.expected)
+			if got := GetEventType(tt.event); got != tt.expected {
+				t.Errorf("GetEventType() = %v, want %v", got, tt.expected)
 			}
 		})
 	}
