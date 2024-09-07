@@ -6,19 +6,21 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
-	"path/filepath"
+	// "os"
+	// "path/filepath"
 	"strings"
 	"testing"
+	// "io/ioutil"
 
 	"github.com/harperreed/micropub-service/internal/git"
 	"github.com/labstack/echo/v5"
 )
 
 type MockGitOperations struct {
-	CreatePostError error
-	UpdatePostError error
-	DeletePostError error
+    CreatePostError error
+    UpdatePostError error
+    DeletePostError error
+    MockFileContent string
 }
 
 // Add this struct
@@ -49,52 +51,63 @@ func (m *MockGitOperations) CreatePost(content map[string]interface{}) error {
 }
 
 func (m *MockGitOperations) UpdatePost(content map[string]interface{}) error {
-    url, ok := content["url"].(string)
+    if m.UpdatePostError != nil {
+        return m.UpdatePostError
+    }
+
+    // We're not using filepath in our mock, so we can remove this check
+    _, ok := content["url"].(string)
     if !ok {
         return fmt.Errorf("invalid URL")
     }
 
-    filename := filepath.Base(url)
-    filePath := filepath.Join(git.RepoPath, filename)
+    properties, ok := content["properties"].(map[string]interface{})
+    if !ok {
+        return fmt.Errorf("invalid properties data")
+    }
 
-    // Read the existing content
-    existingContent, err := os.ReadFile(filePath)
-    if err != nil {
-        return err
+    // Instead of reading from a file, use the mock content
+    existingContent := m.MockFileContent
+    if existingContent == "" {
+        existingContent = "---\ntitle: Initial Title\n---\nInitial content"
     }
 
     // Parse the existing frontmatter
-    frontmatter, _, err := git.SplitFrontmatterAndContent(string(existingContent))
+    frontmatter, _, err := SplitFrontmatterAndContent(existingContent)
     if err != nil {
         return err
     }
 
     // Update the frontmatter with new values
-    if replace, ok := content["replace"].(map[string]interface{}); ok {
-        for key, value := range replace {
-            frontmatter[key] = value
+    for key, value := range properties {
+        if key != "content" {
+            if slice, ok := value.([]interface{}); ok && len(slice) > 0 {
+                frontmatter[key] = fmt.Sprintf("%v", slice[0])
+            } else {
+                frontmatter[key] = fmt.Sprintf("%v", value)
+            }
         }
     }
 
     // Get the updated content
     var updatedContent string
-    if contentSlice, ok := content["replace"].(map[string]interface{})["content"].([]interface{}); ok && len(contentSlice) > 0 {
-        if contentStr, ok := contentSlice[0].(string); ok {
-            updatedContent = contentStr
+    if content, ok := properties["content"]; ok {
+        if slice, ok := content.([]interface{}); ok && len(slice) > 0 {
+            updatedContent = fmt.Sprintf("%v", slice[0])
+        } else {
+            updatedContent = fmt.Sprintf("%v", content)
         }
     }
 
     // Create the updated content with frontmatter
-    fullContent := git.CreateContentWithFrontmatter(frontmatter, updatedContent)
+    fullContent := CreateContentWithFrontmatter(frontmatter, updatedContent)
 
-    // Write the updated content to the file
-    err = os.WriteFile(filePath, []byte(fullContent), 0644)
-    if err != nil {
-        return err
-    }
+    // Instead of writing to a file, update the mock content
+    m.MockFileContent = fullContent
 
     return nil
 }
+
 
 func (m *MockGitOperations) DeletePost(content map[string]interface{}) error {
 	// Mock implementation
@@ -105,40 +118,78 @@ func (m *MockGitOperations) DeletePost(content map[string]interface{}) error {
 }
 
 func TestHandleMicropubUpdate(t *testing.T) {
-	// Create a new Echo instance
-	e := echo.New()
+    e := echo.New()
 
-	// Create a new request
-	req := httptest.NewRequest(http.MethodPut, "/micropub", strings.NewReader(`{"action":"update","url":"https://example.com/2023-05-01-test-post.md","content":"This is an updated test post"}`))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+    req := httptest.NewRequest(http.MethodPut, "/micropub", strings.NewReader(`
+        {
+            "action": "update",
+            "url": "https://example.com/2023-05-01-test-post.md",
+            "replace": {
+                "content": ["This is an updated test post"],
+                "title": ["Updated Title"]
+            }
+        }`))
+    req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
-	// Create a ResponseRecorder to record the response
-	rec := httptest.NewRecorder()
+    rec := httptest.NewRecorder()
+    c := e.NewContext(req, rec)
 
-	// Create a new Echo context
-	c := e.NewContext(req, rec)
+    // Mock git operations
+    originalGitOps := git.GitOps
+    mockGitOps := &MockGitOperations{
+        MockFileContent: "---\ntitle: Initial Title\n---\nInitial content",
+    }
+    git.GitOps = mockGitOps
+    defer func() { git.GitOps = originalGitOps }()
 
-	// Mock git operations
-	originalGitOps := git.GitOps
-	git.GitOps = &MockGitOperations{}
-	defer func() { git.GitOps = originalGitOps }()
+    if err := HandleMicropubUpdate(c); err != nil {
+        t.Fatalf("HandleMicropubUpdate failed: %v", err)
+    }
 
-	// Call the handler
-	if err := HandleMicropubUpdate(c); err != nil {
-		t.Fatalf("HandleMicropubUpdate failed: %v", err)
-	}
+    if rec.Code != http.StatusOK {
+        t.Errorf("Expected status OK; got %v", rec.Code)
+    }
 
-	// Check the status code
-	if rec.Code != http.StatusOK {
-		t.Errorf("Expected status OK; got %v", rec.Code)
-	}
+    expected := "Post updated successfully"
+    if strings.TrimSpace(rec.Body.String()) != expected {
+        t.Errorf("Expected body %q; got %q", expected, rec.Body.String())
+    }
 
-	// Check the response body
-	expected := "Post updated successfully"
-	if strings.TrimSpace(rec.Body.String()) != expected {
-		t.Errorf("Expected body %q; got %q", expected, rec.Body.String())
-	}
+    // Check if the content was updated correctly
+    expectedContent := "---\ntitle: Updated Title\n---\nThis is an updated test post"
+    if mockGitOps.MockFileContent != expectedContent {
+        t.Errorf("File content not updated correctly. Expected:\n%s\nGot:\n%s", expectedContent, mockGitOps.MockFileContent)
+    }
 }
+
+func SplitFrontmatterAndContent(content string) (map[string]string, string, error) {
+    parts := strings.SplitN(content, "---", 3)
+    if len(parts) != 3 {
+        return nil, "", fmt.Errorf("invalid content format")
+    }
+
+    frontmatter := make(map[string]string)
+    for _, line := range strings.Split(strings.TrimSpace(parts[1]), "\n") {
+        kv := strings.SplitN(line, ":", 2)
+        if len(kv) == 2 {
+            frontmatter[strings.TrimSpace(kv[0])] = strings.TrimSpace(kv[1])
+        }
+    }
+
+    return frontmatter, strings.TrimSpace(parts[2]), nil
+}
+
+func CreateContentWithFrontmatter(frontmatter map[string]string, content string) string {
+    var sb strings.Builder
+    sb.WriteString("---\n")
+    for k, v := range frontmatter {
+        sb.WriteString(fmt.Sprintf("%s: %s\n", k, v))
+    }
+    sb.WriteString("---\n")
+    sb.WriteString(content)
+    return sb.String()
+}
+
 func TestHandleMicropubCreate(t *testing.T) {
     // Set up test directory
     testDir := t.TempDir()
@@ -477,47 +528,38 @@ func TestHandleMicropubUpdateScenarios(t *testing.T) {
     defer func() { git.GitOps = originalGitOps }()
 
     t.Run("SuccessfulUpdate", func(t *testing.T) {
-        // Create a test file
-        testFile := filepath.Join(testDir, "test-post.md")
-        initialContent := "---\ntitle: Initial Title\n---\nInitial content"
-        err := os.WriteFile(testFile, []byte(initialContent), 0644)
-        if err != nil {
-            t.Fatalf("Failed to create test file: %v", err)
-        }
+           mockGitOps := &MockGitOperations{
+               MockFileContent: "---\ntitle: Initial Title\n---\nInitial content",
+           }
+           git.GitOps = mockGitOps
+           defer func() { git.GitOps = originalGitOps }()
 
-        req := httptest.NewRequest(http.MethodPut, "/micropub", strings.NewReader(`
-            {
-                "action": "update",
-                "url": "https://example.com/test-post.md",
-                "replace": {
-                    "content": ["Updated content"],
-                    "title": ["Updated Title"]
-                }
-            }
-        `))
-        req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-        rec := httptest.NewRecorder()
-        c := e.NewContext(req, rec)
+           req := httptest.NewRequest(http.MethodPut, "/micropub", strings.NewReader(`
+               {
+                   "action": "update",
+                   "url": "https://example.com/2023-05-01-test-post.md",
+                   "replace": {
+                       "content": ["Updated content"],
+                       "title": ["Updated Title"]
+                   }
+               }`))
+           req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+           rec := httptest.NewRecorder()
+           c := e.NewContext(req, rec)
 
-        if err := HandleMicropubUpdate(c); err != nil {
-            t.Fatalf("HandleMicropubUpdate failed: %v", err)
-        }
+           if err := HandleMicropubUpdate(c); err != nil {
+               t.Fatalf("HandleMicropubUpdate failed: %v", err)
+           }
 
-        if rec.Code != http.StatusOK {
-            t.Errorf("Expected status OK; got %v", rec.Code)
-        }
+           if rec.Code != http.StatusOK {
+               t.Errorf("Expected status OK; got %v", rec.Code)
+           }
 
-        // Check if the file was updated correctly
-        updatedContent, err := os.ReadFile(testFile)
-        if err != nil {
-            t.Fatalf("Failed to read updated file: %v", err)
-        }
-
-        expectedContent := "---\ntitle: Updated Title\n---\nUpdated content"
-        if string(updatedContent) != expectedContent {
-            t.Errorf("File content not updated correctly. Expected:\n%s\nGot:\n%s", expectedContent, string(updatedContent))
-        }
-    })
+           expectedContent := "---\ntitle: Updated Title\n---\nUpdated content"
+           if mockGitOps.MockFileContent != expectedContent {
+               t.Errorf("File content not updated correctly. Expected:\n%s\nGot:\n%s", expectedContent, mockGitOps.MockFileContent)
+           }
+       })
 
 	t.Run("UpdatePostError", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPut, "/micropub", strings.NewReader(`{"action":"update","url":"https://example.com/post1","replace":{"content":["Updated content"]}}`))

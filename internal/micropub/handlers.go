@@ -72,7 +72,14 @@ func HandleMicropubUpdate(c echo.Context) error {
 
     // Handle 'replace' action
     if replace, ok := content["replace"].(map[string]interface{}); ok {
+        for key, value := range replace {
+            if sliceValue, ok := value.([]interface{}); ok && len(sliceValue) > 0 {
+                replace[key] = sliceValue[0]
+            }
+        }
         content["properties"] = replace
+    } else {
+        return echo.NewHTTPError(http.StatusBadRequest, "Invalid replace data")
     }
 
     err = git.GitOps.UpdatePost(content)
