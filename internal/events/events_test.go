@@ -30,20 +30,20 @@ func TestEventEmitter_On(t *testing.T) {
 
 func TestEventEmitter_Emit(t *testing.T) {
 	emitter := NewEventEmitter()
-	eventType := "test"
-	eventData := "test data"
+	eventType := "file"
+	eventData := "test.txt"
 	received := make(chan interface{}, 1)
 
 	emitter.On(eventType, func(data interface{}) {
 		received <- data
 	})
 
-	emitter.Emit(FileEvent{Type: eventType, Filename: eventData})
+	go emitter.Emit(FileEvent{Type: eventType, Filename: eventData})
 
 	select {
 	case data := <-received:
 		if fe, ok := data.(FileEvent); !ok || fe.Filename != eventData {
-			t.Errorf("Expected %v, got %v", eventData, data)
+			t.Errorf("Expected FileEvent with Filename %v, got %v", eventData, data)
 		}
 	case <-time.After(time.Second):
 		t.Error("Timed out waiting for event")
