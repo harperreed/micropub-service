@@ -30,3 +30,24 @@ jobs:
 
     - name: Run tests with race detector
       run: go test -race -v ./...
+
+    - name: Run tests with coverage
+
+      run: go test -coverprofile=coverage.out ./...
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v2
+      with:
+        name: coverage-report
+        path: coverage.out
+
+    - name: Convert coverage to Cobertura format
+      run: |
+        go install github.com/t-yuki/gocover-cobertura@latest
+        gocover-cobertura < coverage.out > coverage.xml
+
+    - name: Upload Cobertura coverage report
+      uses: actions/upload-artifact@v2
+      with:
+        name: coverage-report-cobertura
+        path: coverage.xml
