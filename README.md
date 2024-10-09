@@ -153,6 +153,14 @@ Use the separate Media Endpoint for uploading files.
   - Receive a URL for the uploaded file.
   - Reference the media URL in your Micropub post.
 
+- **Media Endpoint Functionality and Limitations**
+  - Supports file uploads up to 10 MB in size.
+  - Allowed file types: JPEG, PNG, and GIF images.
+  - Files are stored in an 'uploads' directory on the server.
+  - Concurrent uploads are supported.
+  - Error handling for various scenarios (file size limit, unsupported file types, storage errors).
+  - Returns a JSON response with the URL of the uploaded file.
+
 ## Testing
 
 This project uses **Test-Driven Development (TDD)**.
@@ -166,6 +174,14 @@ This project uses **Test-Driven Development (TDD)**.
 - **Test Coverage**
 
   Ensure all tests pass before deploying or updating the application.
+
+- **Test Scenarios**
+  - Successful file upload
+  - Missing file in request
+  - File size exceeding limit
+  - Unsupported file types
+  - Concurrent file uploads
+  - Error scenarios in file storage operations
 
 ## Contributing
 

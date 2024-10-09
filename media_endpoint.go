@@ -3,10 +3,22 @@ package main
 import (
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
 )
+
+const (
+	maxUploadSize = 10 << 20 // 10 MB
+	uploadsDir    = "uploads"
+)
+
+var allowedFileTypes = map[string]bool{
+	"image/jpeg": true,
+	"image/png":  true,
+	"image/gif":  true,
+}
 
 func handleMediaUpload(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -14,10 +26,10 @@ func handleMediaUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse the multipart form data
-	err := r.ParseMultipartForm(10 << 20) // 10 MB max
-	if err != nil {
-		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+	// Limit the request body size
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
+	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
+		http.Error(w, "File too large", http.StatusBadRequest)
 		return
 	}
 
@@ -28,15 +40,20 @@ func handleMediaUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	// Check file type
+	if !isAllowedFileType(file) {
+		http.Error(w, "File type not allowed", http.StatusBadRequest)
+		return
+	}
+
 	// Create the uploads directory if it doesn't exist
-	err = os.MkdirAll("uploads", os.ModePerm)
-	if err != nil {
+	if err := os.MkdirAll(uploadsDir, os.ModePerm); err != nil {
 		http.Error(w, "Failed to create uploads directory", http.StatusInternalServerError)
 		return
 	}
 
 	// Create a new file in the uploads directory
-	dst, err := os.Create(filepath.Join("uploads", handler.Filename))
+	dst, err := os.Create(filepath.Join(uploadsDir, handler.Filename))
 	if err != nil {
 		http.Error(w, "Failed to create the file", http.StatusInternalServerError)
 		return
@@ -44,16 +61,31 @@ func handleMediaUpload(w http.ResponseWriter, r *http.Request) {
 	defer dst.Close()
 
 	// Copy the uploaded file to the destination file
-	_, err = io.Copy(dst, file)
-	if err != nil {
+	if _, err := io.Copy(dst, file); err != nil {
 		http.Error(w, "Failed to save the file", http.StatusInternalServerError)
 		return
 	}
 
 	// Return the URL of the uploaded file
-	fileURL := fmt.Sprintf("/uploads/%s", handler.Filename)
+	fileURL := fmt.Sprintf("/%s/%s", uploadsDir, handler.Filename)
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"url": "%s"}`, fileURL)
+}
+
+func isAllowedFileType(file multipart.File) bool {
+	// Read the first 512 bytes to determine the content type
+	buffer := make([]byte, 512)
+	_, err := file.Read(buffer)
+	if err != nil {
+		return false
+	}
+
+	// Seek back to the start of the file
+	file.Seek(0, 0)
+
+	// Get the content type and check if it's allowed
+	contentType := http.DetectContentType(buffer)
+	return allowedFileTypes[contentType]
 }
 
 func main() {
