@@ -3,12 +3,19 @@ package git
 import (
     "fmt"
     "time"
-    "path/filepath"
     "os"
+    "path/filepath"
 )
 
 type MockGitOperations struct {
     DefaultGitOperations
+    Posts map[string]map[string]interface{}
+}
+
+func NewMockGitOperations() *MockGitOperations {
+    return &MockGitOperations{
+        Posts: make(map[string]map[string]interface{}),
+    }
 }
 
 // Add these methods to your MockGitOperations struct
@@ -38,6 +45,7 @@ func (m *MockGitOperations) CreatePost(content map[string]interface{}) error {
     }
 
     content["url"] = fmt.Sprintf("/%s", filename)
+    m.Posts[filename] = content
     return nil
 }
 
@@ -46,10 +54,11 @@ func (m *MockGitOperations) UpdatePost(content map[string]interface{}) error {
     if !ok {
         return fmt.Errorf("invalid URL")
     }
-    filePath := filepath.Join(RepoPath, filepath.Base(url))
-    if _, err := os.Stat(filePath); os.IsNotExist(err) {
-        return fmt.Errorf("file not found")
+    filename := filepath.Base(url)
+    if _, exists := m.Posts[filename]; !exists {
+        return fmt.Errorf("post not found")
     }
+    m.Posts[filename] = content
     return nil
 }
 
@@ -58,11 +67,12 @@ func (m *MockGitOperations) DeletePost(content map[string]interface{}) error {
     if !ok {
         return fmt.Errorf("invalid URL")
     }
-    filePath := filepath.Join(RepoPath, filepath.Base(url))
-    if _, err := os.Stat(filePath); os.IsNotExist(err) {
-        return fmt.Errorf("file not found")
+    filename := filepath.Base(url)
+    if _, exists := m.Posts[filename]; !exists {
+        return fmt.Errorf("post not found")
     }
-    return os.Remove(filePath)
+    delete(m.Posts, filename)
+    return nil
 }
 
 func (m *MockGitOperations) InitializeRepo() error {
