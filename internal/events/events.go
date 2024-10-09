@@ -32,6 +32,19 @@ func (e *EventEmitter) Emit(event interface{}) {
 	}
 }
 
+func (e *EventEmitter) Off(eventType string, listener func(interface{})) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if listeners, ok := e.listeners[eventType]; ok {
+		for i, l := range listeners {
+			if &l == &listener {
+				e.listeners[eventType] = append(listeners[:i], listeners[i+1:]...)
+				break
+			}
+		}
+	}
+}
+
 func GetEventType(event interface{}) string {
 	switch event.(type) {
 	case FileEvent:
