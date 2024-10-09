@@ -107,6 +107,38 @@ func handleLogin(c echo.Context) error {
 		"role":  role,
 	})
 }
+func initializeApp(cfg *config.Config) (*pocketbase.PocketBase, error) {
+	app := pocketbase.New()
+
+	// Initialize event emitter
+	eventEmitter := events.NewEventEmitter()
+	micropub.SetEventEmitter(eventEmitter)
+
+	// Initialize Git repository
+	if err := git.InitializeRepo(); err != nil {
+		return nil, fmt.Errorf("failed to initialize Git repository: %v", err)
+	}
+
+	// Set up file cleanup process
+	setupFileCleanup(eventEmitter)
+
+	return app, nil
+}
+
+func setupRoutes(app *pocketbase.PocketBase) {
+	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+		e.Router.POST("/micropub", echo.HandlerFunc(micropub.HandleMicropubCreate), middleware.RoleAuthorization("admin", "editor"))
+		e.Router.PUT("/micropub", echo.HandlerFunc(micropub.HandleMicropubUpdate), middleware.RoleAuthorization("admin", "editor"))
+		e.Router.DELETE("/micropub", echo.HandlerFunc(micropub.HandleMicropubDelete), middleware.RoleAuthorization("admin"))
+
+		// Add routes for login
+		e.Router.GET("/login", echo.HandlerFunc(handleLoginPage))
+		e.Router.POST("/login", echo.HandlerFunc(handleLogin))
+
+		return nil
+	})
+}
+
 func main() {
 	// Load configuration
 	cfg, err := config.Load()
@@ -117,31 +149,12 @@ func main() {
 	// Use the configuration
 	log.Printf("Git repository path: %s", cfg.GitRepoPath)
 
-	app := pocketbase.New()
-
-	// Initialize event emitter
-	eventEmitter := events.NewEventEmitter()
-	micropub.SetEventEmitter(eventEmitter)
-
-	// Initialize Git repository
-	if err := git.InitializeRepo(); err != nil {
-    	log.Fatalf("Failed to initialize Git repository: %v", err)
+	app, err := initializeApp(cfg)
+	if err != nil {
+		log.Fatalf("Failed to initialize application: %v", err)
 	}
 
-	// Set up file cleanup process
-	setupFileCleanup(eventEmitter)
-
-	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST("/micropub", echo.HandlerFunc(micropub.HandleMicropubCreate), roleAuthorization("admin", "editor"))
-		e.Router.PUT("/micropub", echo.HandlerFunc(micropub.HandleMicropubUpdate), roleAuthorization("admin", "editor"))
-		e.Router.DELETE("/micropub", echo.HandlerFunc(micropub.HandleMicropubDelete), roleAuthorization("admin"))
-
-		// Add routes for login
-		e.Router.GET("/login", echo.HandlerFunc(handleLoginPage))
-		e.Router.POST("/login", echo.HandlerFunc(handleLogin))
-
-		return nil
-	})
+	setupRoutes(app)
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)

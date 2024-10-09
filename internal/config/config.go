@@ -17,9 +17,15 @@ type Config struct {
 // Load reads the configuration from a JSON file and returns a Config struct.
 // It returns an error if the file cannot be read or parsed.
 func Load() (*Config, error) {
-	log.Println("Loading configuration from config.json")
+	return LoadFromFile("config.json")
+}
 
-	file, err := os.Open("config.json")
+// LoadFromFile reads the configuration from a specified JSON file and returns a Config struct.
+// It returns an error if the file cannot be read or parsed.
+func LoadFromFile(filename string) (*Config, error) {
+	log.Printf("Loading configuration from %s", filename)
+
+	file, err := os.Open(filename)
 	if err != nil {
 		log.Printf("Error opening config file: %v", err)
 		return nil, fmt.Errorf("failed to open config file: %w", err)
@@ -44,4 +50,11 @@ func Load() (*Config, error) {
 
 	log.Println("Configuration loaded successfully")
 	return &config, nil
+}
+
+// LoadTestConfig creates a test configuration for use in unit tests.
+func LoadTestConfig() *Config {
+	return &Config{
+		GitRepoPath: "/tmp/test-repo",
+	}
 }

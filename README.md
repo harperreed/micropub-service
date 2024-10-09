@@ -155,9 +155,11 @@ Use the separate Media Endpoint for uploading files.
 
 ## Testing
 
-This project uses **Test-Driven Development (TDD)**.
+This project uses **Test-Driven Development (TDD)** and includes both unit tests and integration tests.
 
 - **Running Tests**
+
+  To run all tests, including unit tests and integration tests:
 
   ```bash
   go test ./...
@@ -165,7 +167,22 @@ This project uses **Test-Driven Development (TDD)**.
 
 - **Test Coverage**
 
-  Ensure all tests pass before deploying or updating the application.
+  To run tests with coverage:
+
+  ```bash
+  go test -coverprofile=coverage.out ./...
+  go tool cover -html=coverage.out
+  ```
+
+- **Integration Tests**
+
+  Integration tests for server initialization and middleware functionality are located in `cmd/server/main_test.go`.
+
+- **Test Configuration**
+
+  The `internal/config/config.go` file includes support for test configurations. Use `LoadTestConfig()` for test setups.
+
+Ensure all tests pass before deploying or updating the application.
 
 ## Contributing
 
