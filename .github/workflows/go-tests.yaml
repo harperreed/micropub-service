@@ -36,7 +36,7 @@ jobs:
       run: go test -coverprofile=coverage.out ./...
 
     - name: Upload coverage report
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: coverage-report
         path: coverage.out
@@ -47,7 +47,7 @@ jobs:
         gocover-cobertura < coverage.out > coverage.xml
 
     - name: Upload Cobertura coverage report
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: coverage-report-cobertura
         path: coverage.xml
