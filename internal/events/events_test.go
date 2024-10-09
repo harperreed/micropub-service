@@ -2,6 +2,7 @@ package events
 
 import (
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -103,5 +104,91 @@ func TestGetEventType(t *testing.T) {
 				t.Errorf("GetEventType() = %v, want %v", got, tt.expected)
 			}
 		})
+	}
+}
+
+func TestEventEmitter_MultipleListeners(t *testing.T) {
+	emitter := NewEventEmitter()
+	eventType := "test"
+	eventData := "test_data"
+	listenerCount := 3
+	var callCount int32
+
+	for i := 0; i < listenerCount; i++ {
+		emitter.On(eventType, func(data interface{}) {
+			atomic.AddInt32(&callCount, 1)
+		})
+	}
+
+	emitter.Emit(FileEvent{Type: eventType, Filename: eventData})
+
+	// Wait for all listeners to be called
+	time.Sleep(100 * time.Millisecond)
+
+	if int(atomic.LoadInt32(&callCount)) != listenerCount {
+		t.Errorf("Expected %d listener calls, got %d", listenerCount, callCount)
+	}
+}
+
+func TestEventEmitter_RemoveListener(t *testing.T) {
+	emitter := NewEventEmitter()
+	eventType := "test"
+	eventData := "test_data"
+	var callCount int32
+
+	listener := func(data interface{}) {
+		atomic.AddInt32(&callCount, 1)
+	}
+
+	emitter.On(eventType, listener)
+	emitter.Off(eventType, listener)
+
+	emitter.Emit(FileEvent{Type: eventType, Filename: eventData})
+
+	// Wait for potential listener calls
+	time.Sleep(100 * time.Millisecond)
+
+	if atomic.LoadInt32(&callCount) != 0 {
+		t.Errorf("Expected 0 listener calls after removal, got %d", callCount)
+	}
+
+	// Test removing a non-existent listener
+	nonExistentListener := func(data interface{}) {}
+	emitter.Off(eventType, nonExistentListener) // This should not panic
+}
+
+func TestEventEmitter_ErrorHandling(t *testing.T) {
+	emitter := NewEventEmitter()
+	eventType := "test"
+	eventData := "test_data"
+	var normalListenerCalled bool
+	var panicListenerCalled bool
+
+	emitter.On(eventType, func(data interface{}) {
+		panic("This listener panics")
+	})
+
+	emitter.On(eventType, func(data interface{}) {
+		normalListenerCalled = true
+	})
+
+	// This deferred function will recover from the panic and set panicListenerCalled
+	defer func() {
+		if r := recover(); r != nil {
+			panicListenerCalled = true
+		}
+	}()
+
+	emitter.Emit(FileEvent{Type: eventType, Filename: eventData})
+
+	// Wait for all listeners to be called
+	time.Sleep(100 * time.Millisecond)
+
+	if !normalListenerCalled {
+		t.Error("Normal listener was not called")
+	}
+
+	if !panicListenerCalled {
+		t.Error("Panic listener did not panic as expected")
 	}
 }
