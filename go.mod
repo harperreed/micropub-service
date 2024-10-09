@@ -11,6 +11,18 @@ require (
 )
 
 require (
+	github.com/pocketbase/pocketbase/core v0.0.0
+	github.com/pocketbase/pocketbase/models v0.0.0
+	github.com/pocketbase/pocketbase/tokens v0.0.0
+)
+
+replace (
+	github.com/pocketbase/pocketbase/core => ./internal/pocketbase/core
+	github.com/pocketbase/pocketbase/models => ./internal/pocketbase/models
+	github.com/pocketbase/pocketbase/tokens => ./internal/pocketbase/tokens
+)
+
+require (
 	github.com/AlecAivazis/survey/v2 v2.3.7 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.30.4 // indirect
