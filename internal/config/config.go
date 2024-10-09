@@ -16,6 +16,7 @@ type Config struct {
 
 // Load reads the configuration from a JSON file and returns a Config struct.
 // It returns an error if the file cannot be read or parsed.
+// Environment variable GIT_REPO_PATH can be used to override the GitRepoPath from the config file.
 func Load() (*Config, error) {
 	log.Println("Loading configuration from config.json")
 
@@ -37,9 +38,15 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("failed to decode config file: %w", err)
 	}
 
+	// Check for environment variable override
+	if envPath := os.Getenv("GIT_REPO_PATH"); envPath != "" {
+		log.Println("Overriding GitRepoPath with environment variable")
+		config.GitRepoPath = envPath
+	}
+
 	if config.GitRepoPath == "" {
-		log.Println("GitRepoPath is empty in the config file")
-		return nil, fmt.Errorf("GitRepoPath is required in the configuration")
+		log.Println("GitRepoPath is empty in the config file and not set in environment")
+		return nil, fmt.Errorf("GitRepoPath is required in the configuration or environment")
 	}
 
 	log.Println("Configuration loaded successfully")
